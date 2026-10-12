@@ -1,3 +1,8 @@
+## 2026-10-12 — Bind all four qualified native distributions
+
+- Bind the workspace lock to the exact 0.2.0 macOS/Linux arm64/x64 archive SRIs and align all three JavaScript workspace dependency entries. Each native target passes 137 checks with three existing SDK/network timing cases ignored; macOS run 38320886352 completed on Depot without Developer ID signing.
+- Preserve binary/service protocol 0.1.0 and API2 metadata. Exact installed-upgrade acceptance and npm provenance/publication remain separate release steps.
+
 ## 2026-10-12 — Bind the documented MCP archive
 
 - Bind the installer to the exact MCP 0.2.0 archive repacked on Depot after the version-specific documentation cleanup. Verify packed files byte for byte against source; runtime logic is unchanged. Final installed-upgrade acceptance remains pending.
