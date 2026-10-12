@@ -13,7 +13,9 @@
   "files": [
     "bin",
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
   ],
   "dependencies": {
     "@useweave/cli": "0.1.0"
