@@ -1,3 +1,8 @@
+## 2026-10-12 — Typed model MCP candidate
+
+- Extend the source MCP to 46 tools, inheriting the persistent CLI’s bounded Locus, Lens, Forum, Gnosis, Basis and Nexus contracts with runtime capability checks. Preserve explicit sharing, destructive-operation annotations, stdin payloads and strict argument validation.
+- Add actual candidate-binary MCP acceptance for six-model restart/deletion persistence and 4096-dimensional protocol boundaries. The 17-core-tool predecessor passed Depot `93hw896hq5`; model qualification and publication remain pending.
+
 ## 2026-10-12 — Native MCP capability parity (candidate)
 
 - Extend the workspace MCP from ten to seventeen typed tools with node lifecycle, bounded logs, DHT statistics, Strand listing and explicit seeding. Preserve structured native results, cancellation and the single persistent writer; distinguish workspace authority from Desktop selected-file grants. New protocol coverage awaits Depot and actual-node acceptance; no package publication is claimed.

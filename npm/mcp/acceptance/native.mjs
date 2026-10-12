@@ -8,6 +8,7 @@ import { mkdir, readFile, writeFile, stat } from 'node:fs/promises';
 import { join, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveBinary } from '../../cli/src/resolve.js';
+import { verifyModels } from './models.mjs';
 
 const execute = promisify(execFile);
 const output = process.env.WEAVE_ACCEPTANCE_OUTPUT;
@@ -15,9 +16,12 @@ assert.ok(output && isAbsolute(output), 'Use an explicit owned evidence director
 await mkdir(output, { recursive: true });
 const home = join(output, 'fixture-home');
 await mkdir(home, { mode: 0o700 }); // Existing fixture homes are never reused.
-const binary = resolveBinary();
+const modelsRequested = process.env.WEAVE_ACCEPTANCE_MODELS === '1';
+const binary = process.env.WEAVE_BINARY || resolveBinary();
+assert.ok(isAbsolute(binary));
+if (modelsRequested) assert.match(process.env.WEAVE_ACCEPTANCE_BINARY_SHA256 ?? '', /^[a-f0-9]{64}$/, 'Model acceptance requires an exact candidate binary hash.');
 const binarySHA = createHash('sha256').update(await readFile(binary)).digest('hex');
-assert.equal(binarySHA, '4d3588b2bdb7c31bc8c98914e3e62836752071f781104389dad7659df3c86f1c');
+assert.equal(binarySHA, process.env.WEAVE_ACCEPTANCE_BINARY_SHA256 || '4d3588b2bdb7c31bc8c98914e3e62836752071f781104389dad7659df3c86f1c');
 const env = { ...process.env, WEAVE_HOME: home, WEAVE_BINARY: binary, WEAVE_DHT_PORT: '0' };
 delete env.WEAVE_CONFIG;
 delete env.WEAVE_MCP_FIXTURE_MODE;
@@ -59,7 +63,7 @@ const rpc = (method, params) => new Promise((resolve, reject) => {
   pending.set(id, { resolve, reject, timer });
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
 });
-const receipt = { complete: false, binary_sha256: binarySHA, native_version: '0.1.0', checks: [] };
+const receipt = { complete: false, binary_sha256: binarySHA, native_version: modelsRequested ? 'candidate-api2' : '0.1.0', checks: [] };
 const save = () => writeFile(join(output, 'native-mcp-acceptance.json'), JSON.stringify(receipt, null, 2) + '\n');
 const tool = async (name, args = {}) => {
   const result = await rpc('tools/call', { name, arguments: args });
@@ -73,7 +77,7 @@ try {
   await rpc('initialize', { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'weave-native-acceptance', version: '1' } });
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
   const listing = await rpc('tools/list', {});
-  assert.equal(listing.tools.length, 17);
+  assert.equal(listing.tools.length, 46);
   receipt.tools = listing.tools.map((item) => item.name);
   const initialized = await tool('weave_init');
   assert.equal(initialized.home, home);
@@ -100,6 +104,7 @@ try {
   const reopened = await tool('weave_read_strand', { name: 'mcp-native-acceptance', length: 1 });
   assert.equal(reopened.blocks[0].data, content);
   assert.equal(createHash('sha256').update(await readFile(join(home, 'identity/identity.json'))).digest('hex'), identityHash);
+  if (modelsRequested) receipt.models = await verifyModels(tool, rpc);
   await tool('weave_stop');
   receipt.complete = true;
   receipt.completed = new Date().toISOString();
@@ -108,8 +113,7 @@ try {
   throw error;
 } finally {
   await native(['node', 'stop']).catch(() => {});
-  await save();
   child.stdin.end();
   const kill = setTimeout(() => child.kill('SIGKILL'), 3000);
-  try { const [code] = await exited; assert.equal(code, 0, stderr); } finally { clearTimeout(kill); }
+  try { const [code] = await exited; assert.equal(code, 0, stderr); } catch (error) { receipt.complete = false; receipt.error = error.message; throw error; } finally { clearTimeout(kill); await save(); }
 }

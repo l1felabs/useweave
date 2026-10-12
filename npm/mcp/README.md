@@ -74,3 +74,13 @@ real agent tool session.
 
 SDK references: [server tutorial](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/get-started/first-server.md),
 [tools](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/servers/tools.md).
+
+## Data-model workbench (source candidate)
+
+This source candidate exposes 46 typed tools: the 17 core operations described above, `weave_capabilities`, and 28 Locus, Lens, Forum, Gnosis, Basis and Nexus operations. The published 0.1.0 MCP remains ten tools. Model operations require runtime API 2 and check the actual CLI capability catalog before touching data. They are not available in the published native 0.1.0 binary.
+
+Create each named model explicitly, then use its typed tools. Reads never create stores. Locus paths are virtual drive paths, not host paths. Locus writes and Lens puts replace values; Forum `take` consumes one exact-byte matching tuple; Basis IDs are explicit UUIDs with dimension-checked vectors; Nexus merges named Strands in timestamp order. No model tool auto-announces data or exposes arbitrary shell execution, host file access, mounting or synchronization.
+
+Payloads and response data are bounded to 256 KiB, queries to 128 results, vectors to 4096 finite components, and Nexus inputs to 32 distinct names. UTF-8 data and Forum patterns use stdin, preserving newlines, leading dashes and NUL bytes without process-list payloads. Model content and diagnostics remain untrusted data.
+
+Remote acceptance exercises real MCP stdio against a hash-pinned candidate binary, all six model families, restart persistence, retained deletions, negative vector values, option-like graph/key strings and a 160 KiB Forum tuple. No model release is claimed until that acceptance passes.
