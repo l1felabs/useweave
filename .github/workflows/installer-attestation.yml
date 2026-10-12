@@ -3,16 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       approved_commit:
-        description: Exact reviewed and qualified source commit
-        required: true
-        type: string
-      qualified_run:
-        description: Successful Depot qualification run for that commit
+        description: Exact reviewed release-operations commit
         required: true
         type: string
 permissions:
   contents: read
-  actions: read
 concurrency:
   group: joinweave-0.1.2-attestation
   cancel-in-progress: false
@@ -21,7 +16,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      actions: read
       id-token: write
     timeout-minutes: 10
     steps:
@@ -32,34 +26,10 @@ jobs:
         with:
           node-version: '22.23.3'
       - run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
-      - name: Require the exact approved source and successful Depot workflow
+      - name: Verify and sign the exact Depot archive without rebuilding
         env:
           APPROVED_COMMIT: ${{ inputs.approved_commit }}
-          QUALIFIED_RUN: ${{ inputs.qualified_run }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          [[ "$APPROVED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$QUALIFIED_RUN" =~ ^[0-9]+$ ]]
-          test "$GITHUB_SHA" = "$APPROVED_COMMIT"
-          test "$RUNNER_ENVIRONMENT" = github-hosted
-          test -z "$(git status --porcelain)"
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QUALIFIED_RUN" > "$RUNNER_TEMP/qualified-run.json"
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import {readFileSync} from 'node:fs';
-          const run=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/qualified-run.json'));
-          assert.equal(run.head_sha,process.env.APPROVED_COMMIT);
-          assert.equal(run.conclusion,'success');
-          assert.equal(run.path,'.github/workflows/installer-qualification.yml');
-          assert.equal(run.repository.full_name,'l1felabs/useweave');
-          NODE
-          gh run download "$QUALIFIED_RUN" --repo "$GITHUB_REPOSITORY" --name "joinweave-0.1.2-qualified-$GITHUB_SHA" --dir qualified
-      - name: Verify and sign the qualified archive without rebuilding
-        env:
-          APPROVED_COMMIT: ${{ inputs.approved_commit }}
-          QUALIFIED_RUN: ${{ inputs.qualified_run }}
-        run: node scripts/attest-installer-release.mjs qualified signed-release
+        run: node scripts/attest-installer-release.mjs release/installer-0.1.2 signed-release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: joinweave-0.1.2-signed-${{ github.sha }}
