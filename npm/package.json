@@ -1,0 +1,17 @@
+{
+  "name": "joinweave-packages",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "cli",
+    "joinweave",
+    "mcp"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

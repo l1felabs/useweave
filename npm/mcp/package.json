@@ -1,0 +1,36 @@
+{
+  "name": "@useweave/mcp",
+  "version": "0.1.0",
+  "description": "Weave strand and DHT tools for agents over MCP stdio",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "weave-mcp": "bin/weave-mcp.js"
+  },
+  "exports": "./src/server.js",
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@useweave/cli": "0.1.0",
+    "zod": "4.6.5"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/l1felabs/useweave.git",
+    "directory": "npm/mcp"
+  }
+}

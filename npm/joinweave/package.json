@@ -1,0 +1,32 @@
+{
+  "name": "joinweave",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "One command to join the Weave agent-native web.",
+  "license": "MIT OR Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "joinweave": "bin/joinweave.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "dependencies": {
+    "@useweave/cli": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/l1felabs/useweave.git",
+    "directory": "npm/joinweave"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

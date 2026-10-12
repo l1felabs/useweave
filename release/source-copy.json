@@ -1,0 +1,164 @@
+{
+  "schema": 1,
+  "source_repository": "l1felabs/weave",
+  "source_commit": "5e1d7d30840bcbb594a6942e071eea9e5f34c3ab",
+  "public_repository": "l1felabs/useweave",
+  "files": [
+    {
+      "path": "npm/package.json",
+      "original_sha256": "8daf79b22a8e9e8cccc615fb235cb17db888f430808b4f3fcf3df3f6922a12b7",
+      "public_sha256": "0f3638af9a5605311677a527b48257791e37cd58fd84fd3c692fbfdb66897d10",
+      "transformation": "test-command-only"
+    },
+    {
+      "path": "npm/package-lock.json",
+      "original_sha256": "e836f17d698344227b3e1280c5c62e962c1a3d8f940b1949292893b2b948fa96",
+      "public_sha256": "ddcded5f0f8348d58c8518f965a5c503d90e82d885cc8f954e86fa64049ecc3e",
+      "transformation": "native-optional-artifacts-only"
+    },
+    {
+      "path": "npm/cli/LICENSE-APACHE",
+      "original_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "public_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/cli/LICENSE-MIT",
+      "original_sha256": "9a3a6034b75145583501ba18e08304a83fda5b4679a0dcc558b2aa6e560ec1a0",
+      "public_sha256": "9a3a6034b75145583501ba18e08304a83fda5b4679a0dcc558b2aa6e560ec1a0",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/cli/README.md",
+      "original_sha256": "9b0afff1d046832266edf26c61e479de8e6008acc4112ed4759d979d3beff48c",
+      "public_sha256": "9b0afff1d046832266edf26c61e479de8e6008acc4112ed4759d979d3beff48c",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/cli/bin/weave.js",
+      "original_sha256": "95021a2b2db1ade9b2c42efc49c1b3661d9f2de880ba7a109314cc3115a76b69",
+      "public_sha256": "95021a2b2db1ade9b2c42efc49c1b3661d9f2de880ba7a109314cc3115a76b69",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/cli/package.json",
+      "original_sha256": "3f31a55cd5eaa6f1671fc62f3603aaa511c6869def7fa59ba103ea32e239652b",
+      "public_sha256": "c59796adb3b95041fa2a648ce973100552695adbf23ed9de744cd4d935118fcb",
+      "transformation": "repository-url-only"
+    },
+    {
+      "path": "npm/cli/src/resolve.js",
+      "original_sha256": "67683a1c38a6af3acdc262b6cc087398b8b014f3b8bd7033e28578bd9b8d3baf",
+      "public_sha256": "67683a1c38a6af3acdc262b6cc087398b8b014f3b8bd7033e28578bd9b8d3baf",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/LICENSE-APACHE",
+      "original_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "public_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/LICENSE-MIT",
+      "original_sha256": "c8cc3bd5882a0e56de9e1447e6cb79675259e4bdde8b5900e013db75ee953f6c",
+      "public_sha256": "c8cc3bd5882a0e56de9e1447e6cb79675259e4bdde8b5900e013db75ee953f6c",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/README.md",
+      "original_sha256": "c75fb444ae52365a9d4902f9ec49e665e57d01d96fcd852319a6524a2d7352eb",
+      "public_sha256": "c75fb444ae52365a9d4902f9ec49e665e57d01d96fcd852319a6524a2d7352eb",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/bin/weave-mcp.js",
+      "original_sha256": "31737b1edf9cc965848a94d08aa61dd7e2de83f3d54c8e8540680a54532031b7",
+      "public_sha256": "31737b1edf9cc965848a94d08aa61dd7e2de83f3d54c8e8540680a54532031b7",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/package.json",
+      "original_sha256": "a7a63fc130345c011418412614b7f717b3095ddf489f20c589ad5ef1585026f3",
+      "public_sha256": "1eaf4321934f54722c170bc0b131f41977fc365c4793c9930669c0b617b0c407",
+      "transformation": "repository-url-only"
+    },
+    {
+      "path": "npm/mcp/src/native.js",
+      "original_sha256": "03e0d3fe5603cb663ac0371b2732dfffe8feb5aa56dd30b3f8b0bebd3659f7ca",
+      "public_sha256": "03e0d3fe5603cb663ac0371b2732dfffe8feb5aa56dd30b3f8b0bebd3659f7ca",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/src/server.js",
+      "original_sha256": "253ae66aa4de49c07bbac5f08d75d6e80d1269b534918d0cb195fa41e0aaf532",
+      "public_sha256": "253ae66aa4de49c07bbac5f08d75d6e80d1269b534918d0cb195fa41e0aaf532",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/joinweave/LICENSE-APACHE",
+      "original_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "public_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/joinweave/LICENSE-MIT",
+      "original_sha256": "c8cc3bd5882a0e56de9e1447e6cb79675259e4bdde8b5900e013db75ee953f6c",
+      "public_sha256": "c8cc3bd5882a0e56de9e1447e6cb79675259e4bdde8b5900e013db75ee953f6c",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/joinweave/README.md",
+      "original_sha256": "cc6ce3156774c533ea98b5220e9cce4706cec64522a0fcabefaa8f2bca8e6d71",
+      "public_sha256": "cc6ce3156774c533ea98b5220e9cce4706cec64522a0fcabefaa8f2bca8e6d71",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/joinweave/bin/joinweave.js",
+      "original_sha256": "7c17a55ff4c119f3d3539d410607f804900fe5d79634d812c9397f178c0400bc",
+      "public_sha256": "7c17a55ff4c119f3d3539d410607f804900fe5d79634d812c9397f178c0400bc",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/joinweave/package.json",
+      "original_sha256": "86884bf982cacf3ba3de6aca4b74c9388aeacfdce3bf1e917c3ac01af5910d23",
+      "public_sha256": "34880ac4b30ac514d58e7fc8cc1129bc082e9e3d0fc501fa9a7a12b2e8e67276",
+      "transformation": "repository-url-only"
+    },
+    {
+      "path": "npm/joinweave/src/installer.js",
+      "original_sha256": "1498bd44296a3462f7c317eb5b6219e790528e01082b57ce284c19dd639061dd",
+      "public_sha256": "1498bd44296a3462f7c317eb5b6219e790528e01082b57ce284c19dd639061dd",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/cli/test/resolve.test.mjs",
+      "original_sha256": "92100e492f6a87382fa3a9e8c0899150b7387750f87c6972f0442d9e65cfef08",
+      "public_sha256": "92100e492f6a87382fa3a9e8c0899150b7387750f87c6972f0442d9e65cfef08",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/joinweave/test/installer.test.mjs",
+      "original_sha256": "73f2cf98f3f8474a1bb5636153af393027d4d332fdfafa2ac70353cd369b61dd",
+      "public_sha256": "73f2cf98f3f8474a1bb5636153af393027d4d332fdfafa2ac70353cd369b61dd",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/test/fixture-cli.js",
+      "original_sha256": "25b60283d05d74a7d73e9cef4de88cb5c1df1922a027f84e96bf908fe1497812",
+      "public_sha256": "25b60283d05d74a7d73e9cef4de88cb5c1df1922a027f84e96bf908fe1497812",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/test/native.test.js",
+      "original_sha256": "fc4b81c15142b85a1a1797b9a5824ba73fd80da34f477de8cfd908ced5098860",
+      "public_sha256": "fc4b81c15142b85a1a1797b9a5824ba73fd80da34f477de8cfd908ced5098860",
+      "transformation": "none"
+    },
+    {
+      "path": "npm/mcp/test/protocol.test.js",
+      "original_sha256": "57cf252e0576ccfc4b17dd5771dc910abc42a87d2b1ab4b1b28d48b309b35304",
+      "public_sha256": "57cf252e0576ccfc4b17dd5771dc910abc42a87d2b1ab4b1b28d48b309b35304",
+      "transformation": "none"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@useweave/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Prebuilt Weave CLI for the agent-native web.",
+  "license": "MIT OR Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "weave": "bin/weave.js"
+  },
+  "exports": {
+    ".": "./src/resolve.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "optionalDependencies": {
+    "@useweave/cli-darwin-arm64": "0.1.0",
+    "@useweave/cli-darwin-x64": "0.1.0",
+    "@useweave/cli-linux-arm64": "0.1.0",
+    "@useweave/cli-linux-x64": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/l1felabs/useweave.git",
+    "directory": "npm/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

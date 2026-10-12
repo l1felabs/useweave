@@ -1,0 +1,84 @@
+name: Publish reviewed Weave npm 0.1.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        type: choice
+        options: ['0.1.0']
+        default: '0.1.0'
+        required: true
+      approved_commit:
+        description: 'Exact independently approved public packaging commit (40 lowercase hexadecimal characters)'
+        required: true
+        type: string
+      authentication:
+        type: choice
+        options: ['bootstrap-token', 'trusted-publisher']
+        default: 'bootstrap-token'
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: useweave-npm-0.1.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'l1felabs/useweave' && github.ref == 'refs/tags/v0.1.0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: npm-release
+    steps:
+      - name: Require the approved tag commit
+        env:
+          APPROVED_COMMIT: ${{ inputs.approved_commit }}
+          RELEASE: ${{ inputs.release }}
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$RELEASE" = '0.1.0'
+          test "$GITHUB_SHA" = "$APPROVED_COMMIT"
+          test "$RUNNER_ENVIRONMENT" = 'github-hosted'
+
+      - name: Checkout the approved public source and committed artifacts
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ inputs.approved_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set the reviewed Node runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22.23.3'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Set the pinned npm release
+        run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
+
+      - name: Check the verifier and every approved byte
+        run: |
+          set -euo pipefail
+          node --test scripts/verify-release.test.mjs
+          node scripts/verify-release.mjs "$GITHUB_WORKSPACE"
+          node scripts/publish-release.mjs --root "$GITHUB_WORKSPACE"
+
+      - name: Bootstrap publication with provenance
+        if: inputs.authentication == 'bootstrap-token'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          APPROVED_COMMIT: ${{ inputs.approved_commit }}
+        run: |
+          set -euo pipefail
+          test -n "$NODE_AUTH_TOKEN"
+          node scripts/publish-release.mjs --root "$GITHUB_WORKSPACE" --approved-commit "$APPROVED_COMMIT" --publish
+
+      - name: Later publication using configured trusted publishers
+        if: inputs.authentication == 'trusted-publisher'
+        env:
+          APPROVED_COMMIT: ${{ inputs.approved_commit }}
+        run: node scripts/publish-release.mjs --root "$GITHUB_WORKSPACE" --approved-commit "$APPROVED_COMMIT" --publish

@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "status": "approved",
+  "release": "0.1.0",
+  "public_repository": "l1felabs/useweave",
+  "reviewed_source_commit": "5e1d7d30840bcbb594a6942e071eea9e5f34c3ab",
+  "source_copy_sha256": "c13e810d1cabfb3a45259e067ff43c0a76e3c975fb5cf5b0e8774ef7e4b9cc28",
+  "reviewer": "weave_ownership and weave_packaging independent reviews; Root actual runtime verification",
+  "packages": [
+    {
+      "name": "@useweave/cli-darwin-arm64",
+      "sha256": "98c56f71de57c01274d29df89befabad8105cd074d17285896c783c8ccc70243",
+      "integrity": "sha512-OuJ4LHoiI5LoP7hwnEAbHdtM2Imo3fp48J/7559KHCSRRGO4wrNCQxK7i4T3slBJkT0duL63/Dw4so6apqylzQ==",
+      "native_receipt_sha256": "f155e383d703c5955c185408f856d11d37f17e38d75e0afeab772f6b7bb50b8f",
+      "runtime_acceptance": "passed",
+      "runtime_receipt": "https://github.com/l1felabs/weave-release-source/pull/1"
+    },
+    {
+      "name": "@useweave/cli-darwin-x64",
+      "sha256": "7edda77fd9ebf1e5ca6a79614774bcaf723ac8d81f6baad7c42d04121d7d9dbf",
+      "integrity": "sha512-XaYIajd99+YybpNj0UHZM2+HE4f0tX3hsREPhFoOFPqM58TDyaQi68+r0Aa0fox3b4E1JkoGJWNV3rTFbdqEXA==",
+      "native_receipt_sha256": "dddd23aeabe58d101e0971dd6eb5434d89535294a42bc868ab1e6df1cbcbbb90",
+      "runtime_acceptance": "passed",
+      "runtime_receipt": "https://github.com/l1felabs/weave-release-source/pull/1"
+    },
+    {
+      "name": "@useweave/cli-linux-arm64",
+      "sha256": "24f6591a5bde70002a43debcefb760b5f2231e25655058af3d425784c15483bd",
+      "integrity": "sha512-N38n+KcEs5YGu+dnbRItcKAbK5fRp/CEZ5TXTWRAwbRIE6Hc/RqohH6PT/g9XoE2eMS1TxDaBa8nqRxUqf5/FQ==",
+      "native_receipt_sha256": "ee904c74d21d26102e12569e3bc2ef2db70f93d0507be1bdf2051e5dc7f3e803",
+      "runtime_acceptance": "passed",
+      "runtime_receipt": "https://github.com/l1felabs/weave-release-source/actions/runs/38201580013/job/114655946693"
+    },
+    {
+      "name": "@useweave/cli-linux-x64",
+      "sha256": "cc1dfaf94e788b624e8c0f7656c2d61184e2e8974cac5d48f34d52b0d3d254f0",
+      "integrity": "sha512-OoFJ0gktndlsBKnM/8nPKnHa77p3wLTzutyPznaJoOuJS8off/cDi8g5OiaUXhoZ1JGZe5pGHffuvk1guz+6nw==",
+      "native_receipt_sha256": "b2f52c2d6a7edfe5f9207dca783f6a0a31d803c8596a8414a2737ed892afd2be",
+      "runtime_acceptance": "passed",
+      "runtime_receipt": "https://github.com/l1felabs/weave-release-source/actions/runs/38201580013/job/114655946800"
+    },
+    {
+      "name": "@useweave/cli",
+      "sha256": "cd0415ddccca979e5c242ece386b209e6a47e9adbd3f14a484b239248799effa",
+      "integrity": "sha512-n16zjFyyOTnmufOHzaZH3geU/Ut263L3Yw4OBRrezGoc4HvryK1ATbID5mnU2bAqZM5ERYmV+rSF4xIiW1gebg=="
+    },
+    {
+      "name": "@useweave/mcp",
+      "sha256": "65e0bd735124a02cec565c67835f6c724c17a997b59b3545c2f0e04120307a6f",
+      "integrity": "sha512-l5i5RCgWYSZYtwXWF9AG0Bgpz6X9jcDQFYq4lzlioXkD3ZYYfs0Gxw44D+jLYAae/Dq22CGVKScA6MQRBP7RDg=="
+    },
+    {
+      "name": "joinweave",
+      "sha256": "07cf2ffaee64f7c12d5fb9828ccf303243097eef0ff4b5e1a7f06af6d4cc7ef1",
+      "integrity": "sha512-QztboKwMbMDMxuM2ubiEZQobksi4iIkFh8ldjTt/Am9R9b56f5dXrCy+fdBIvdCA12utuxhKwYYslLSw8yVwUQ=="
+    }
+  ],
+  "actual_mcp_acceptance": {
+    "completed_utc": "2026-10-12T04:27:51.218826+00:00",
+    "completed_mcp_calls": 28,
+    "checks_passed": 24,
+    "trace_sha256": "17b1ec0c42e45d1b955393b4890b713ed9c20fdfe7212ce15ca7daf50e31c49e",
+    "verification_sha256": "8ffd43f2cba19f19aab3bd9d2fa1bf3f1518ac393eb89dd6cd416173f12f436d",
+    "logical_blocks": 10,
+    "payloads_present": [
+      2,
+      7
+    ],
+    "mutual_signed_public_discovery": true,
+    "absence_basis": "native total count plus exact verified reads; raw bitfield not exposed by MCP",
+    "receipt": "https://github.com/l1felabs/weave-release-source/pull/1"
+  }
+}
