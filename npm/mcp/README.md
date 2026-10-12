@@ -3,6 +3,14 @@
 This source branch contains a **46-tool candidate**: 17 core operations, capability discovery and 28 data-model operations. The published
 `@useweave/mcp@0.1.0` still exposes ten tools. The expanded tools are not published yet.
 
+Official MCP Registry metadata is **prepared, not submitted** under
+`io.github.l1felabs/weave`. The checked-in `server.json` retains the source's
+current version; registration requires a fresh qualified npm release containing
+the matching `mcpName`. See [registry release instructions](./REGISTRY.md).
+
+[MCP documentation](https://docs.weave.earth/tooling/mcp) ·
+[Report an issue](https://github.com/l1felabs/useweave/issues)
+
 `@useweave/mcp` gives agents native Weave DHT and strand tools over MCP stdio.
 Install the workspace first with `npx joinweave`, then run:
 

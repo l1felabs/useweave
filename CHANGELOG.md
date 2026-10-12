@@ -1,3 +1,7 @@
+## 2026-10-12 — Prepare official MCP Registry metadata
+
+- Add the `io.github.l1felabs/weave` npm ownership marker, stdio `server.json`, documentation/issue links and discovery keywords. Record version, compatible native runtime, Depot qualification and GitHub organization-owner prerequisites; distinguish the published ten-tool release from the 46-tool source candidate. No version change, runtime change or registry submission.
+
 ## 2026-10-12 — Reject malformed MCP capability catalogs
 
 - Require a safe integer runtime API version and a typed command-list catalog before invoking model data operations. Reject coerced string/array versions, non-finite/unsafe numbers and malformed catalogs; regression verifies every refusal performs only the capability probe. Remote tests remain pending.

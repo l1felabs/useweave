@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.l1felabs/weave",
+  "title": "Weave",
+  "description": "Local Weave node, peer discovery, signed Strands and persistent data models for agents.",
+  "websiteUrl": "https://docs.weave.earth/tooling/mcp",
+  "repository": {
+    "url": "https://github.com/l1felabs/useweave",
+    "source": "github",
+    "subfolder": "npm/mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@useweave/mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "WEAVE_BINARY",
+          "description": "Optional absolute path to the native Weave executable. Data-model tools require runtime API 2.",
+          "format": "filepath",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "WEAVE_HOME",
+          "description": "Optional absolute directory for the local Weave workspace, inherited by the native CLI.",
+          "format": "filepath",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
