@@ -7,7 +7,7 @@ export const MCP_VERSION = '0.2.0';
 export const LEGACY_MCP_VERSION = '0.1.0';
 export const LEGACY_MCP_INTEGRITY = 'sha512-l5i5RCgWYSZYtwXWF9AG0Bgpz6X9jcDQFYq4lzlioXkD3ZYYfs0Gxw44D+jLYAae/Dq22CGVKScA6MQRBP7RDg==';
 // Exact 0.2.0 archive packed on Depot; never resolve latest.
-export const MCP_INTEGRITY = 'sha512-TbaSPBBu6/HQ7c6mU0Yg8HU2jx3gkmYWsU4pu5EbsEo7QYVx6GMLbZFW8ajg+EBL7USmSUhk0iQ40gL/JxV1oA==';
+export const MCP_INTEGRITY = 'sha512-PE+rrlbBwJEgnMeieVoujnE882bdm4J5sIjjBXQGPYPVU100s78RxaiFzBx/nrsoK7fx/gHCv36Wt6ho0u5oGA==';
 const ENTRY = 'node_modules/@useweave/mcp/bin/weave-mcp.js';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const fail = (code, message) => { throw new InstallError(code, message); };

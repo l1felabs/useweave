@@ -1,3 +1,7 @@
+## 2026-10-12 — Bind the documented MCP archive
+
+- Bind the installer to the exact MCP 0.2.0 archive repacked on Depot after the version-specific documentation cleanup. Verify packed files byte for byte against source; runtime logic is unchanged. Final installed-upgrade acceptance remains pending.
+
 ## 2026-10-12 — Version-specific 0.2.0 package documentation
 
 - Describe API-2 and the 46-tool/six-model workbench durably in packed CLI, MCP and installer guides; remove temporary candidate/publication and historical test-status wording. Preserve runtime limits, Desktop selected-file grant boundaries and consented migration/recovery behavior.
