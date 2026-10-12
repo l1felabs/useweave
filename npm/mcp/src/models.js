@@ -52,7 +52,12 @@ export const modelToolDefinitions = [
 ];
 
 export function supportsModel(capabilities, { family, command }) {
-  return capabilities?.ok === true && capabilities.runtime_api_version >= 2
-    && capabilities.storage_owner === 'persistent_node'
-    && Array.isArray(capabilities.commands?.[family]) && capabilities.commands[family].includes(command);
+  if (!capabilities || typeof capabilities !== 'object' || Array.isArray(capabilities)
+    || capabilities.ok !== true || !Number.isSafeInteger(capabilities.runtime_api_version)
+    || capabilities.runtime_api_version < 2 || capabilities.storage_owner !== 'persistent_node') return false;
+  const catalog = capabilities.commands;
+  return catalog !== null && typeof catalog === 'object' && !Array.isArray(catalog)
+    && Object.hasOwn(catalog, family)
+    && Object.values(catalog).every((commands) => Array.isArray(commands) && commands.every((entry) => typeof entry === 'string'))
+    && catalog[family].includes(command);
 }

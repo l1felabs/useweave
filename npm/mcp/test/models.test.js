@@ -7,7 +7,11 @@ for (const { capability: { family, command } } of modelToolDefinitions) (capabil
 const id = 'ef7caf13-247b-4c82-a4ae-b289c65325ec';
 
 test('model dispatch refuses older, missing and malformed capabilities before any data operation', async () => {
-  for (const response of [null, [], { ok: false }, { ...capabilities, runtime_api_version: 1 }, { ...capabilities, commands: {} }, { ...capabilities, storage_owner: 'ephemeral' }]) {
+  const badVersions = ['2', '0x2', [2], 2.5, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1];
+  const badCatalogs = [null, [], 'lens get', {}, { lens: 'get' }, { lens: [{ command: 'get' }] }, { lens: ['get', 7] }, { lens: ['get'], locus: null }];
+  for (const response of [null, [], { ok: false }, { ...capabilities, runtime_api_version: 1 }, { ...capabilities, storage_owner: 'ephemeral' },
+    ...badVersions.map((runtime_api_version) => ({ ...capabilities, runtime_api_version })),
+    ...badCatalogs.map((commands) => ({ ...capabilities, commands }))]) {
     const calls = [];
     const result = await invokeTool('weave_lens_put', { db: 'notes', key: '--file', data: 'hello' }, async (args) => { calls.push(args); return response; });
     assert.equal(result.isError, true);

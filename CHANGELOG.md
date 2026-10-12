@@ -1,3 +1,7 @@
+## 2026-10-12 — Reject malformed MCP capability catalogs
+
+- Require a safe integer runtime API version and a typed command-list catalog before invoking model data operations. Reject coerced string/array versions, non-finite/unsafe numbers and malformed catalogs; regression verifies every refusal performs only the capability probe. Remote tests remain pending.
+
 ## 2026-10-12 — Typed model MCP candidate
 
 - Extend the source MCP to 46 tools, inheriting the persistent CLI’s bounded Locus, Lens, Forum, Gnosis, Basis and Nexus contracts with runtime capability checks. Preserve explicit sharing, destructive-operation annotations, stdin payloads and strict argument validation.
