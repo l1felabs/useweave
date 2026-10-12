@@ -1,3 +1,7 @@
+## 2026-10-12 — Corrected installer passes full native acceptance
+
+- Bind the exact 0.1.3 archive to successful Depot run 38281000021, 60 checks with zero failures/skips, and real fresh-user systemd install, restart, crash recovery, persistent MCP native status and retained-data uninstall. The native ownership receipt is 854 bytes. Preserve the signed archive pipeline; npm publication remains pending.
+
 ## 2026-10-12 — Gate corrected installer attestation on actual native acceptance
 
 - Require the 0.1.3 candidate archive to complete real managed-service installation, full persistent MCP access, restart/crash recovery and retained-data uninstall on Depot before release attestation. Bind its compact ownership receipt and acceptance evidence to the exact archive and source. No native safety limit or scoped-package version changes.
