@@ -153,6 +153,7 @@ export function installationSummary(result) {
     lines.push(`${status} ${component.name}${component.version ? ` ${component.version}` : ''}  /  ${component.status}${component.id === 'node' ? ` (${component.managed ? 'user service' : 'detached'})` : ''}`);
   }
   lines.push('', `Workspace: ${result.shared}`, `Private identity and data: ${result.workspace}`, `Agent clients: ${result.mcpClients.length ? result.mcpClients.join(', ') : 'none configured; consent is required'}`, '', 'Your next thread:', `  ${cli} node status --json`, `  ${cli} strand create --json`, '', 'Docs: https://docs.weave.earth/getting-started/quickstart', 'Your identity stays local. No account or desktop app was installed.');
-  if (!result.pathAdded) lines.push('Add the CLI to PATH with a consented rerun: npx joinweave@0.1.3 --yes --path');
+  if (result.mcpClientsNeedingUpdate?.length) lines.push(`Upgrade existing agent connections with consent: npx joinweave@0.2.0 --yes --mcp-client ${result.mcpClientsNeedingUpdate.join(',')}`);
+  if (!result.pathAdded) lines.push('Add the CLI to PATH with a consented rerun: npx joinweave@0.2.0 --yes --path');
   return lines.map(clean).join('\n');
 }

@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 const require = createRequire(import.meta.url);
 const supported = new Set(['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64']);
 
@@ -10,7 +10,7 @@ const supported = new Set(['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x
 export function resolveBinary({ platform = process.platform, arch = process.arch, resolve = require.resolve } = {}) {
   const target = `${platform}-${arch}`;
   if (!supported.has(target)) {
-    throw Object.assign(new Error(`Weave 0.1.0 does not support ${target}. Supported: macOS and Linux, arm64 or x64.`), { code: 'UNSUPPORTED_PLATFORM' });
+    throw Object.assign(new Error(`Weave ${VERSION} does not support ${target}. Supported: macOS and Linux, arm64 or x64.`), { code: 'UNSUPPORTED_PLATFORM' });
   }
   const name = `@useweave/cli-${target}`;
   let manifestPath;

@@ -1,11 +1,13 @@
 # @useweave/cli
 
-Run `npx @useweave/cli@0.1.0 --help`, or install the complete workspace with
-`npx joinweave@0.1.0`. The command is `weave`.
+Run `npx @useweave/cli@0.2.0 --help`, or install the complete workspace with
+`npx joinweave@0.2.0`. The command is `weave`.
+
+The 0.2.0 release candidate contains runtime API 2 for persistent data-model tools. Publication and platform acceptance are recorded separately.
 
 The launcher selects an exact-version native optional dependency for macOS or
 Linux, arm64 or x64. It never compiles on the user's computer. Keep npm optional
-dependencies enabled. Windows is not supported by this initial runtime.
+dependencies enabled. Windows is not supported by this runtime.
 
 For integrations, `import { resolveBinary } from '@useweave/cli'` returns the
 installed native executable path synchronously and throws a descriptive error

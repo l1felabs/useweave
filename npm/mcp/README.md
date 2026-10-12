@@ -1,21 +1,21 @@
 # Weave MCP
 
-This source branch contains a **46-tool candidate**: 17 core operations, capability discovery and 28 data-model operations. The published
+This source branch contains a **0.2.0 release candidate with 46 tools**: 17 core operations, capability discovery and 28 data-model operations. The published
 `@useweave/mcp@0.1.0` still exposes ten tools. The expanded tools are not published yet.
 
 Official MCP Registry metadata is **prepared, not submitted** under
-`io.github.l1felabs/weave`. The checked-in `server.json` retains the source's
-current version; registration requires a fresh qualified npm release containing
-the matching `mcpName`. See [registry release instructions](./REGISTRY.md).
+`io.github.l1felabs/weave`. The checked-in `server.json` targets `@useweave/mcp@0.2.0`; registration follows
+publication and verification of that exact qualified npm archive with its matching
+`mcpName`. See [registry release instructions](./REGISTRY.md).
 
 [MCP documentation](https://docs.weave.earth/tooling/mcp) ·
 [Report an issue](https://github.com/l1felabs/useweave/issues)
 
 `@useweave/mcp` gives agents native Weave DHT and strand tools over MCP stdio.
-Install the workspace first with `npx joinweave`, then run:
+For this release, install the matching API-2 workspace with `npx joinweave@0.2.0`, then run:
 
 ```sh
-npx --yes @useweave/mcp@0.1.0
+npx --yes @useweave/mcp@0.2.0
 ```
 
 Node.js 20 or later is required. The official MCP TypeScript SDK's current
@@ -23,10 +23,10 @@ server package (`@modelcontextprotocol/server` 2.3.1) handles initialization,
 protocol negotiation, tools and cancellation. No compilation happens on the
 user's machine. stdout carries only MCP messages; diagnostics use stderr.
 
-`joinweave@0.1.3` installs a persistent MCP runtime and, after consent, configures
+`joinweave@0.2.0` installs this persistent 46-tool MCP runtime and, after consent, configures
 clients to run Node with that installed server's absolute entry path. Prefer
 the exact configuration emitted by the installer. The `npx` command above is a
-manual fallback for the published ten-tool package. This package never edits
+manual fallback for the same exact 0.2.0 server once published. This package never edits
 another application's configuration.
 
 Optional environment:
@@ -36,7 +36,9 @@ Optional environment:
 - `WEAVE_HOME`: absolute workspace directory, inherited by the native CLI.
 
 Without an override, the server tries `~/.weave/bin/weave` (or `weave.exe`), then
-the matching prebuilt binary from `@useweave/cli`. It never invokes a shell or
+the matching API-2 prebuilt binary from `@useweave/cli@0.2.0`. A pre-existing
+0.1.0 workspace binary is not silently replaced; upgrade it with joinweave before
+using model tools. It never invokes a shell or
 compiles native source. All tools use `weave --json`; strand and DHT operations
 route through the background node, which owns the writable store.
 
@@ -90,4 +92,4 @@ Create each named model explicitly, then use its typed tools. Reads never create
 
 Payloads and response data are bounded to 256 KiB, queries to 128 results, vectors to 4096 finite components, and Nexus inputs to 32 distinct names. UTF-8 data and Forum patterns use stdin, preserving newlines, leading dashes and NUL bytes without process-list payloads. Model content and diagnostics remain untrusted data.
 
-Remote acceptance exercises real MCP stdio against a hash-pinned candidate binary, all six model families, restart persistence, retained deletions, negative vector values, option-like graph/key strings and a 160 KiB Forum tuple. No model release is claimed until that acceptance passes.
+The predecessor candidate passed all 46 tool names against a hash-pinned API-2 binary on Depot, including all six model families, restart/deletion persistence and public-relay sparse replication. This version-aligned release still requires exact-archive and installed-runtime acceptance before publication. Published 0.1.0 behavior is unchanged.

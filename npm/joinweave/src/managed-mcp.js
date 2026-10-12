@@ -3,8 +3,11 @@ import { join, dirname, resolve, isAbsolute } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { InstallError, assertSafePath } from './installer.js';
 
-export const MCP_VERSION = '0.1.0';
-export const MCP_INTEGRITY = 'sha512-l5i5RCgWYSZYtwXWF9AG0Bgpz6X9jcDQFYq4lzlioXkD3ZYYfs0Gxw44D+jLYAae/Dq22CGVKScA6MQRBP7RDg==';
+export const MCP_VERSION = '0.2.0';
+export const LEGACY_MCP_VERSION = '0.1.0';
+export const LEGACY_MCP_INTEGRITY = 'sha512-l5i5RCgWYSZYtwXWF9AG0Bgpz6X9jcDQFYq4lzlioXkD3ZYYfs0Gxw44D+jLYAae/Dq22CGVKScA6MQRBP7RDg==';
+// Exact 0.2.0 archive packed on Depot; never resolve latest.
+export const MCP_INTEGRITY = 'sha512-TbaSPBBu6/HQ7c6mU0Yg8HU2jx3gkmYWsU4pu5EbsEo7QYVx6GMLbZFW8ajg+EBL7USmSUhk0iQ40gL/JxV1oA==';
 const ENTRY = 'node_modules/@useweave/mcp/bin/weave-mcp.js';
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const fail = (code, message) => { throw new InstallError(code, message); };
@@ -44,12 +47,12 @@ export function resolveNpmCli(env, nodePath) {
   fail('NPM_UNAVAILABLE', 'Cannot locate npm beside Node. Run this installer through npx, or use --no-mcp.');
 }
 
-export function verifyMcpTree(root) {
+export function verifyMcpTree(root, { version = MCP_VERSION, integrity = MCP_INTEGRITY } = {}) {
   const files = censusTree(root);
   const pkg = JSON.parse(fs.readFileSync(join(root, 'node_modules/@useweave/mcp/package.json'), 'utf8'));
   const lock = JSON.parse(fs.readFileSync(join(root, 'package-lock.json'), 'utf8'));
   const top = lock.packages?.['node_modules/@useweave/mcp'];
-  if (pkg.name !== '@useweave/mcp' || pkg.version !== MCP_VERSION || pkg.bin?.['weave-mcp'] !== 'bin/weave-mcp.js' || top?.version !== MCP_VERSION || top?.integrity !== MCP_INTEGRITY || !files.some((file) => file.path === ENTRY && file.type === 'file')) fail('INVALID_MCP_PACKAGE', 'MCP package does not match the pinned published release.');
+  if (pkg.name !== '@useweave/mcp' || pkg.version !== version || pkg.bin?.['weave-mcp'] !== 'bin/weave-mcp.js' || top?.version !== version || top?.integrity !== integrity || !files.some((file) => file.path === ENTRY && file.type === 'file')) fail('INVALID_MCP_PACKAGE', 'MCP package does not match the pinned published release.');
   for (const [path, entry] of Object.entries(lock.packages || {})) {
     if (!path) continue;
     if (entry.link || !/^https:\/\/registry\.npmjs\.org\//.test(entry.resolved || '') || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(entry.integrity || '')) fail('INVALID_MCP_LOCK', 'MCP dependency lock contains an unverified package source.');
@@ -88,15 +91,59 @@ function writeCensus(path, bytes) {
 }
 
 export class ManagedMcp {
-  constructor(installer) {
+  constructor(installer, { version = MCP_VERSION, receiptKey = 'mcpRuntime' } = {}) {
+    if (![MCP_VERSION, LEGACY_MCP_VERSION].includes(version) || !['mcpRuntime', 'previousMcpRuntime'].includes(receiptKey) || (receiptKey === 'previousMcpRuntime' && version !== LEGACY_MCP_VERSION)) fail('INVALID_MANIFEST', 'MCP release ownership is not recognized.');
     this.owner = installer;
-    this.path = join(installer.weaveHome, 'tools', `mcp-${MCP_VERSION}`);
+    this.version = version;
+    this.receiptKey = receiptKey;
+    this.release = { version, integrity: version === LEGACY_MCP_VERSION ? LEGACY_MCP_INTEGRITY : MCP_INTEGRITY };
+    this.path = join(installer.weaveHome, 'tools', `mcp-${this.version}`);
     this.entry = join(this.path, ENTRY);
-    this.censusPath = join(installer.weaveHome, 'tools', `mcp-${MCP_VERSION}.census.json`);
+    this.censusPath = join(installer.weaveHome, 'tools', `mcp-${this.version}.census.json`);
+  }
+
+  get receipt() { return this.owner.manifest[this.receiptKey]; }
+  set receipt(value) {
+    if (value === undefined) delete this.owner.manifest[this.receiptKey];
+    else this.owner.manifest[this.receiptKey] = value;
+  }
+
+  previous() {
+    if (this.receiptKey !== 'mcpRuntime' || this.version !== MCP_VERSION || !this.owner.manifest.previousMcpRuntime) return null;
+    const previous = new ManagedMcp(this.owner, { version: LEGACY_MCP_VERSION, receiptKey: 'previousMcpRuntime' });
+    if (!previous.commonReceipt(previous.receipt)) fail('INVALID_MANIFEST', 'Previous MCP runtime receipt is not recognized.');
+    return previous;
+  }
+
+  managedEntries() {
+    const entries = [this.entry];
+    const previous = this.previous();
+    if (previous?.validReceipt(previous.receipt)) entries.push(previous.entry);
+    if (this.receiptKey === 'mcpRuntime' && this.version === MCP_VERSION && this.receipt?.version === LEGACY_MCP_VERSION) {
+      const legacy = new ManagedMcp(this.owner, { version: LEGACY_MCP_VERSION });
+      if (legacy.validReceipt(legacy.receipt)) entries.push(legacy.entry);
+    }
+    return entries;
+  }
+
+  async prepareUpgrade() {
+    if (this.receiptKey !== 'mcpRuntime' || this.version !== MCP_VERSION || this.receipt?.version !== LEGACY_MCP_VERSION) return;
+    if (this.owner.manifest.previousMcpRuntime) fail('INVALID_MANIFEST', 'Both previous and active legacy MCP receipts exist. They were preserved.');
+    const legacy = new ManagedMcp(this.owner, { version: LEGACY_MCP_VERSION });
+    legacy.migrateLegacyReceipt();
+    legacy.resumeRemoval();
+    if (!legacy.receipt) return;
+    // Complete an original journaled stage and verify the old immutable tree.
+    // Keep it available for clients whose configuration has not been consented
+    // for migration. A failed new download never removes their working server.
+    await legacy.install();
+    this.owner.manifest.previousMcpRuntime = legacy.receipt;
+    this.receipt = undefined;
+    this.owner.saveManifest();
   }
 
   commonReceipt(receipt) {
-    return receipt && receipt.version === MCP_VERSION && receipt.path === this.path && receipt.entry === this.entry;
+    return receipt && receipt.version === this.version && receipt.path === this.path && receipt.entry === this.entry;
   }
 
   validReceipt(receipt) {
@@ -125,7 +172,11 @@ export class ManagedMcp {
 
   /** Move 0.1.2's large embedded census before any native service command. */
   migrateLegacyReceipt() {
-    const owner = this.owner, receipt = owner.manifest.mcpRuntime;
+    this.previous()?.migrateLegacyReceipt();
+    if (this.receiptKey === 'mcpRuntime' && this.version === MCP_VERSION && this.receipt?.version === LEGACY_MCP_VERSION) {
+      return new ManagedMcp(this.owner, { version: LEGACY_MCP_VERSION }).migrateLegacyReceipt();
+    }
+    const owner = this.owner, receipt = this.receipt;
     if (!receipt || receipt.files === undefined) return;
     if (!this.commonReceipt(receipt) || receipt.census !== undefined) fail('INVALID_MANIFEST', 'Legacy MCP runtime receipt is not recognized.');
     const bytes = censusBytes(receipt.files);
@@ -171,9 +222,10 @@ export class ManagedMcp {
   }
 
   async install() {
+    await this.prepareUpgrade();
     const owner = this.owner;
     this.resumeRemoval();
-    let receipt = owner.manifest.mcpRuntime;
+    let receipt = this.receipt;
     if (receipt?.removing) fail('UNMANAGED_MCP_RUNTIME', 'The interrupted MCP removal preserved modified files. Resolve them before reinstalling.');
     assertSafePath(this.path);
     if (receipt?.staging) {
@@ -182,7 +234,7 @@ export class ManagedMcp {
       const expected = this.files(receipt);
       if (fs.existsSync(receipt.staging)) {
         if (fs.existsSync(this.path)) fail('CONCURRENT_EDIT', 'Both staged and installed MCP runtimes exist. They were preserved.');
-        if (JSON.stringify(verifyMcpTree(receipt.staging)) !== JSON.stringify(expected)) fail('UNMANAGED_MCP_RUNTIME', 'The recoverable MCP stage was modified. It was preserved.');
+        if (JSON.stringify(verifyMcpTree(receipt.staging, this.release)) !== JSON.stringify(expected)) fail('UNMANAGED_MCP_RUNTIME', 'The recoverable MCP stage was modified. It was preserved.');
         this.commitCensus(receipt);
         fs.renameSync(receipt.staging, this.path);
       } else if (!fs.existsSync(this.path)) {
@@ -190,7 +242,7 @@ export class ManagedMcp {
         for (const path of [receipt.census.staging, this.censusPath].filter(Boolean)) {
           if (fs.existsSync(path)) { if (sha(privateCensus(path)) !== receipt.census.sha256) fail('MODIFIED_MCP_CENSUS', 'MCP census was modified.'); fs.unlinkSync(path); }
         }
-        delete owner.manifest.mcpRuntime;
+        this.receipt = undefined;
         owner.saveManifest(); receipt = undefined;
       }
       if (receipt) {
@@ -201,7 +253,7 @@ export class ManagedMcp {
     }
     if (fs.existsSync(this.path)) {
       if (!this.unchanged(receipt)) fail('UNMANAGED_MCP_RUNTIME', `An unrelated or modified MCP runtime exists at ${this.path}. It was preserved.`);
-      verifyMcpTree(this.path); return;
+      verifyMcpTree(this.path, this.release); return;
     }
     if (receipt) fail('MISSING_MCP_RUNTIME', 'The recorded MCP runtime is missing. Uninstall the owned receipt before reinstalling.');
     assertSafePath(this.censusPath);
@@ -210,19 +262,19 @@ export class ManagedMcp {
     const id = randomUUID(), stage = join(dirname(this.path), `.mcp-${id}.staging`), censusStage = join(dirname(this.path), `.mcp-${id}.census.staging`);
     fs.mkdirSync(stage, { mode: 0o700 });
     try {
-      fs.writeFileSync(join(stage, 'package.json'), JSON.stringify({ name: 'joinweave-managed-mcp', version: MCP_VERSION, private: true, dependencies: { '@useweave/mcp': MCP_VERSION } }), { flag: 'wx', mode: 0o600 });
+      fs.writeFileSync(join(stage, 'package.json'), JSON.stringify({ name: 'joinweave-managed-mcp', version: this.version, private: true, dependencies: { '@useweave/mcp': this.version } }), { flag: 'wx', mode: 0o600 });
       const npmCli = owner.npmCli || resolveNpmCli(owner.env, owner.nodePath);
       const result = await owner.run(owner.nodePath, [npmCli, 'install', '--prefix', stage, '--ignore-scripts', '--bin-links=false', '--omit=optional', '--no-audit', '--no-fund', '--save-exact', '--registry=https://registry.npmjs.org', '--loglevel=error'], { env: owner.env, cwd: stage, timeout: 180_000, signal: owner.signal });
       if (result.code !== 0) fail('MCP_INSTALL_FAILED', `MCP installation failed (exit ${result.code}). Your runtime and identity remain available. Check npm connectivity and its existing release-age policy, then rerun.`);
-      const bytes = censusBytes(verifyMcpTree(stage));
+      const bytes = censusBytes(verifyMcpTree(stage, this.release));
       writeCensus(censusStage, bytes);
       assertSafePath(this.path);
       if (fs.existsSync(this.path)) fail('CONCURRENT_EDIT', 'MCP destination appeared during installation. It was not replaced.');
-      owner.manifest.mcpRuntime = { version: MCP_VERSION, path: this.path, entry: this.entry, census: { path: this.censusPath, sha256: sha(bytes), staging: censusStage }, staging: stage };
+      this.receipt = { version: this.version, path: this.path, entry: this.entry, census: { path: this.censusPath, sha256: sha(bytes), staging: censusStage }, staging: stage };
       owner.saveManifest();
-      this.commitCensus(owner.manifest.mcpRuntime);
+      this.commitCensus(this.receipt);
       fs.renameSync(stage, this.path);
-      delete owner.manifest.mcpRuntime.staging; owner.saveManifest();
+      delete this.receipt.staging; owner.saveManifest();
     } finally {
       if (!owner.preserveLock) {
         if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
@@ -233,7 +285,7 @@ export class ManagedMcp {
 
   /** Persisted intent is required to recover an expected both-absent removal. */
   resumeRemoval() {
-    const owner = this.owner, receipt = owner.manifest.mcpRuntime;
+    const owner = this.owner, receipt = this.receipt;
     if (!receipt?.removing) return;
     if (receipt.removing !== true || !this.validReceipt(receipt) || receipt.staging || receipt.census.staging) fail('INVALID_MANIFEST', 'MCP removal journal is not recognized.');
     assertSafePath(this.path); assertSafePath(this.censusPath);
@@ -251,11 +303,19 @@ export class ManagedMcp {
     }
     // A crash after either unlink leaves the durable marker. Both-absent is
     // safe only on this explicitly journaled path; no foreign file is adopted.
-    delete owner.manifest.mcpRuntime; owner.saveManifest();
+    this.receipt = undefined; owner.saveManifest();
   }
 
   remove() {
-    const owner = this.owner, receipt = owner.manifest.mcpRuntime;
+    if (this.receiptKey === 'mcpRuntime' && this.version === MCP_VERSION && this.receipt?.version === LEGACY_MCP_VERSION) {
+      if (this.owner.manifest.previousMcpRuntime) fail('INVALID_MANIFEST', 'Both previous and active legacy MCP receipts exist. They were preserved.');
+      new ManagedMcp(this.owner, { version: LEGACY_MCP_VERSION }).remove();
+    } else this.removeOwned();
+    this.previous()?.remove();
+  }
+
+  removeOwned() {
+    const owner = this.owner, receipt = this.receipt;
     if (!receipt) return;
     if (receipt.removing) { this.resumeRemoval(); return; }
     if (!this.validReceipt(receipt)) fail('INVALID_MANIFEST', 'MCP runtime receipt is not recognized.');

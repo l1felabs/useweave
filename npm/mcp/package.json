@@ -1,6 +1,6 @@
 {
   "name": "@useweave/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "mcpName": "io.github.l1felabs/weave",
   "description": "Weave strand and DHT tools for agents over MCP stdio",
   "homepage": "https://docs.weave.earth/tooling/mcp",
@@ -31,14 +31,16 @@
     "src",
     "README.md",
     "REGISTRY.md",
-    "server.json"
+    "server.json",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
   ],
   "scripts": {
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
-    "@useweave/cli": "0.1.0",
+    "@useweave/cli": "0.2.0",
     "zod": "4.6.5"
   },
   "publishConfig": {

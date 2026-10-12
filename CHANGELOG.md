@@ -1,3 +1,10 @@
+## 0.2.0 — 2026-10-12 (release candidate)
+
+- Align the CLI wrapper, native package dependencies, 46-tool MCP metadata and installer at 0.2.0. Runtime API2 supplies persistent typed models; the native service receipt protocol and binary version stay 0.1.0, with the distribution version recorded separately as packageVersion. Explicitly ship both existing license files in CLI/MCP archives.
+- Retain the verified 0.1.0 MCP tree and compact census during upgrade, preserving unconsented client configurations and reporting which clients need explicit migration. Recover interrupted upgrades; uninstall only unchanged owned current/previous runtimes.
+- Stop the owned previous native process before replacing different executable bytes or a previous package version. Preserve executable and service definition when shutdown cannot be confirmed. Persist and sync an old/new hash-bound replacement intent before rename; recover either side of interruption through reinstall or uninstall, refusing foreign bytes.
+- Add isolated upgrade, client-conflict, legacy receipt, retry and shutdown regressions, plus 46-tool installed-protocol acceptance. Depot kmldz7r7hr passes 62 checks with two explicitly deferred real-runtime checks; the exact MCP archive SRI is bound after byte-for-byte source verification. Native archive SRIs and the workspace release lock remain pending, so this candidate is not publishable yet. Actual fresh/upgrade managed-service and installed MCP acceptance remain required.
+
 ## 2026-10-12 — Prepare official MCP Registry metadata
 
 - Add the `io.github.l1felabs/weave` npm ownership marker, stdio `server.json`, documentation/issue links and discovery keywords. Record version, compatible native runtime, Depot qualification and GitHub organization-owner prerequisites; distinguish the published ten-tool release from the 46-tool source candidate. No version change, runtime change or registry submission.

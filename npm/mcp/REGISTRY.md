@@ -2,7 +2,8 @@
 
 Status: **prepared, not submitted**. `server.json` describes the source candidate
 under `io.github.l1felabs/weave`; this file is not evidence of a registry listing.
-Its version remains `0.1.0` to match the unchanged source manifest. The published
+Its version is aligned to the `0.2.0` package and MCP server identity. Publication
+of that exact archive remains a separate gate. The published
 `@useweave/mcp@0.1.0` exposes ten tools and lacks `mcpName`; it cannot be registered
 unchanged. This source contains 46 tools, including 28 model operations that
 require native runtime API 2. Published native CLI 0.1.0 does not provide those
@@ -14,9 +15,9 @@ eligible. See the official [npm package verification rules](https://github.com/m
 
 ## Release prerequisites
 
-1. Assign a fresh MCP release version after exact-source review. Update
-   `package.json`, the `mcp` entry in `../package-lock.json`, both version fields
-   in `server.json`, and MCP `serverInfo.version` in `src/server.js` together.
+1. Verify release `0.2.0` after exact-source review: `package.json`, the `mcp`
+   entry in `../package-lock.json`, both version fields in `server.json`, and
+   MCP `serverInfo.version` in `src/server.js` must agree.
    Keep `mcpName` equal to `io.github.l1felabs/weave`. Do not reuse the occupied
    npm version `0.1.0` or substitute a version range or `latest` in `server.json`.
 2. Qualify the complete release through Depot: locked installation, MCP tests,
@@ -35,9 +36,9 @@ eligible. See the official [npm package verification rules](https://github.com/m
    Complete the publisher's GitHub device authorization when required. No
    namespace ownership has been proven by this preparation.
 
-Metadata-only changes here do not change dependencies or package versions, so
-the existing npm lockfile remains applicable. The release version/dependency
-changes in steps 1–2 must update it before the next qualification.
+The CLI dependency and its four native optional packages must all resolve to
+0.2.0 API-2 artifacts. The lockfile and installer MCP integrity must be bound to
+the actual qualified archives before the next installation acceptance.
 
 ## Submit the qualified release
 
