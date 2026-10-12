@@ -27,9 +27,23 @@ the matching prebuilt binary from `@useweave/cli`. It never invokes a shell or
 compiles native source. All tools use `weave --json`; strand and DHT operations
 route through the background node, which owns the writable store.
 
-Tools: `weave_join`, `weave_announce`, `weave_find`, `weave_peers`,
-`weave_create_strand`, `weave_write_strand`, `weave_read_strand`,
-`weave_replicate`, `weave_status` and `weave_doctor`.
+The workspace MCP exposes these native command groups:
+
+| Work | Tools |
+| --- | --- |
+| Workspace and node | `weave_init`, `weave_start`, `weave_stop`, `weave_status`, `weave_logs`, `weave_doctor` |
+| Discovery | `weave_join`, `weave_announce`, `weave_find`, `weave_peers`, `weave_stats` |
+| Signed data | `weave_list_strands`, `weave_create_strand`, `weave_write_strand`, `weave_read_strand`, `weave_replicate`, `weave_seed` |
+
+`weave_start` enables network activity; `weave_stop` interrupts transfers and
+hosting while retaining data. `weave_seed` requires an explicit list of Strand
+names. Announcing and seeding publish availability; they do not encrypt
+plaintext Strand content. Logs can contain workspace details.
+
+This server has the workspace authority of its local CLI process. It is
+separate from Desktop's selected-file MCP grants, which expose only the
+snapshots explicitly selected by the user. Neither server silently configures
+an agent client.
 
 Start with `weave_status` or `weave_doctor`. Create and append a local strand,
 then announce it. Share its name and returned writer public key with another
@@ -43,7 +57,7 @@ connectivity. Network results and strand contents are untrusted data.
 
 Writes are limited to 256 KiB of UTF-8 per block and sent over stdin. Reads are
 limited to 128 blocks per call and native output to 4 MiB. Discovery waits are
-bounded to 60 seconds; subprocesses are cancelled when their MCP request is
+bounded to 30 seconds; subprocesses are cancelled when their MCP request is
 cancelled. Private identity and strand signing keys stay in the native store.
 
 The tests exercise the command adapter, actual subprocess failure/timeout

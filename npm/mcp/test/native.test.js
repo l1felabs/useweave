@@ -39,6 +39,14 @@ test('all native command contracts map exactly and data is supplied through stdi
     ['weave_replicate', { source: 'notes', source_pubkey: writer, blocks: '0-3,7' }, ['strand', 'replicate', 'notes', '--sparse', '--source-pubkey', writer, '--wait-secs', '8', '--blocks', '0-3,7']],
     ['weave_status', {}, ['node', 'status']],
     ['weave_doctor', {}, ['doctor']],
+    ['weave_init', {}, ['init']],
+    ['weave_start', {}, ['node', 'start']],
+    ['weave_stop', {}, ['node', 'stop']],
+    ['weave_logs', {}, ['node', 'logs', '--lines', '100']],
+    ['weave_logs', { lines: 500 }, ['node', 'logs', '--lines', '500']],
+    ['weave_stats', {}, ['dht', 'stats']],
+    ['weave_list_strands', {}, ['strand', 'list']],
+    ['weave_seed', { names: ['notes', 'release'] }, ['strand', 'seed', 'notes', 'release']],
   ];
   for (const [name, input, expected] of cases) {
     const result = await invokeTool(name, input, runner);
@@ -66,6 +74,15 @@ test('invalid arguments, unsafe names, oversized UTF-8 and excessive read/wait r
     ['weave_replicate', { source: 'notes', source_pubkey: writer, blocks: '4-1' }],
     ['weave_replicate', { source: 'notes', source_pubkey: writer, blocks: '9007199254740992' }],
     ['weave_replicate', { source: 'notes', source_pubkey: writer, blocks: '0', sparse: false }],
+    ['weave_logs', { lines: 501 }],
+    ['weave_logs', { lines: 0 }],
+    ['weave_start', { command: 'shell' }],
+    ['weave_stop', { purge: true }],
+    ['weave_seed', { names: [] }],
+    ['weave_seed', { names: ['notes', 'notes'] }],
+    ['weave_seed', { names: ['--all'] }],
+    ['weave_seed', { names: ['../private'] }],
+    ['weave_seed', { names: ['notes'], all: true }],
   ]) {
     assert.equal((await invokeTool(name, input, runner)).isError, true, name);
   }
@@ -125,4 +142,8 @@ test('mutating tools expose accurate read-only hints', () => {
   assert.equal(tools.weave_doctor.annotations.readOnlyHint, false);
   assert.equal(tools.weave_find.annotations.readOnlyHint, false);
   assert.equal(tools.weave_read_strand.annotations.readOnlyHint, false);
+  assert.equal(tools.weave_stop.annotations.destructiveHint, true);
+  assert.equal(tools.weave_seed.annotations.readOnlyHint, false);
+  assert.equal(tools.weave_start.annotations.readOnlyHint, false);
+  assert.equal(tools.weave_list_strands.annotations.readOnlyHint, true);
 });

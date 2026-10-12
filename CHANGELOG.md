@@ -1,3 +1,7 @@
+## 2026-10-12 — Native MCP capability parity (candidate)
+
+- Extend the workspace MCP from ten to seventeen typed tools with node lifecycle, bounded logs, DHT statistics, Strand listing and explicit seeding. Preserve structured native results, cancellation and the single persistent writer; distinguish workspace authority from Desktop selected-file grants. New protocol coverage awaits Depot and actual-node acceptance; no package publication is claimed.
+
 ## 2026-10-12 — Corrected installer passes full native acceptance
 
 - Bind the exact 0.1.3 archive to successful Depot run 38281000021, 60 checks with zero failures/skips, and real fresh-user systemd install, restart, crash recovery, persistent MCP native status and retained-data uninstall. The native ownership receipt is 854 bytes. Preserve the signed archive pipeline; npm publication remains pending.
