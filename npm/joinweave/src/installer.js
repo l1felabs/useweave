@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { ManagedMcp } from './managed-mcp.js';
 
-export const VERSION = '0.1.2';
+export const VERSION = '0.1.3';
 const NATIVE_PACKAGE_VERSION = '0.1.0';
 // Published native0.1.0 treats this as its service-ownership protocol version.
 const RECEIPT_VERSION = '0.1.0';
@@ -236,7 +236,9 @@ export class Installer {
   saveManifest() {
     this.manifest.version = RECEIPT_VERSION;
     this.manifest.installerVersion = VERSION;
-    atomicWrite(this.manifestPath, Buffer.from(`${JSON.stringify(this.manifest, null, 2)}\n`), { previous: readFile(this.manifestPath) });
+    const bytes = Buffer.from(`${JSON.stringify(this.manifest, null, 2)}\n`);
+    if (bytes.length > 64 * 1024) fail('MANIFEST_TOO_LARGE', 'The native service ownership receipt would exceed 64 KiB. Existing files were preserved.');
+    atomicWrite(this.manifestPath, bytes, { previous: readFile(this.manifestPath) });
   }
 
   lock() {
@@ -489,6 +491,7 @@ export class Installer {
     this.lock();
     try {
       this.loadManifest();
+      this.mcpRuntime.migrateLegacyReceipt();
       this.stage({ id: 'runtime', label: 'Installing the native runtime' });
       this.installBinary();
       ensureDirectory(this.shared, 0o755);
@@ -601,6 +604,7 @@ export class Installer {
     let purgeAfterUnlock = false;
     try {
       this.loadManifest();
+      this.mcpRuntime.migrateLegacyReceipt();
       const known = readFile(this.manifestPath);
       if (!known) fail('NO_INSTALL_RECEIPT', 'No joinweave installation receipt exists. Existing files will not be removed.');
       this.stage({ id: 'node', label: 'Stopping the owned background node' });

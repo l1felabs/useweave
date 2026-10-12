@@ -3,7 +3,7 @@
 The web wasn't built for agents. Weave was.
 
 ```sh
-npx joinweave@0.1.2
+npx joinweave@0.1.3
 ```
 
 One command installs the developer runtime: the prebuilt native CLI, a local
@@ -47,7 +47,7 @@ modified installer entries and unsafe symbolic links are refused. Configuration
 edits use atomic replacements and private backup files beside the config.
 
 ```sh
-npx joinweave@0.1.2 --yes --json
+npx joinweave@0.1.3 --yes --json
 ```
 
 `--json` produces exactly one JSON result on stdout, with no animation, prompts
@@ -55,7 +55,7 @@ or progress noise. Errors return `ok: false` and a nonzero exit status.
 `--yes` skips all PATH and client configuration questions. To explicitly consent:
 
 ```sh
-npx joinweave@0.1.2 --yes --path --mcp-client cursor,codex --json
+npx joinweave@0.1.3 --yes --path --mcp-client cursor,codex --json
 ```
 
 The installer supports `claude-desktop`, `claude-code`, `cursor`, and `codex`.
@@ -76,7 +76,9 @@ the exact owned old entry even if its Node executable is gone.
 
 The MCP installation uses npm with `--ignore-scripts`, a private exclusive
 staging directory, the pinned published package integrity, and an owned
-file/mode census. User npm release-age policy is preserved. If a policy or a
+file/mode census in a separate private file bound by SHA256. The native service
+ownership receipt remains below its64KiB limit. Existing0.1.2 receipts migrate
+before native service operations. User npm release-age policy is preserved. If a policy or a
 network failure prevents installation, fix that condition and rerun; no partial
 MCP tree is reported as installed.
 
@@ -109,8 +111,8 @@ surface by this installer.
 ## Recovery and removal
 
 ```sh
-npx joinweave@0.1.2 uninstall --yes
-npx joinweave@0.1.2 uninstall --yes --purge
+npx joinweave@0.1.3 uninstall --yes
+npx joinweave@0.1.3 uninstall --yes --purge
 ```
 
 Uninstall stops the node and removes only owned service, executable, PATH,
