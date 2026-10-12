@@ -1,5 +1,9 @@
 # Weave MCP
 
+This source branch contains a **seventeen-tool candidate**. The published
+`@useweave/mcp@0.1.0` still exposes ten tools; the seven additional lifecycle,
+logging, statistics, listing and seeding tools below are not published yet.
+
 `@useweave/mcp` gives agents native Weave DHT and strand tools over MCP stdio.
 Install the workspace first with `npx joinweave`, then run:
 
@@ -12,9 +16,11 @@ server package (`@modelcontextprotocol/server` 2.3.1) handles initialization,
 protocol negotiation, tools and cancellation. No compilation happens on the
 user's machine. stdout carries only MCP messages; diagnostics use stderr.
 
-Configure an agent's MCP server with command `npx` and arguments
-`["--yes", "@useweave/mcp@0.1.0"]`. `joinweave` offers this configuration after
-consent; this package never edits another application's configuration.
+`joinweave@0.1.3` installs a persistent MCP runtime and, after consent, configures
+clients to run Node with that installed server's absolute entry path. Prefer
+the exact configuration emitted by the installer. The `npx` command above is a
+manual fallback for the published ten-tool package. This package never edits
+another application's configuration.
 
 Optional environment:
 
@@ -27,7 +33,7 @@ the matching prebuilt binary from `@useweave/cli`. It never invokes a shell or
 compiles native source. All tools use `weave --json`; strand and DHT operations
 route through the background node, which owns the writable store.
 
-The workspace MCP exposes these native command groups:
+The source candidate exposes these native command groups:
 
 | Work | Tools |
 | --- | --- |
@@ -35,7 +41,7 @@ The workspace MCP exposes these native command groups:
 | Discovery | `weave_join`, `weave_announce`, `weave_find`, `weave_peers`, `weave_stats` |
 | Signed data | `weave_list_strands`, `weave_create_strand`, `weave_write_strand`, `weave_read_strand`, `weave_replicate`, `weave_seed` |
 
-`weave_start` enables network activity; `weave_stop` interrupts transfers and
+In the candidate, `weave_start` enables network activity; `weave_stop` interrupts transfers and
 hosting while retaining data. `weave_seed` requires an explicit list of Strand
 names. Announcing and seeding publish availability; they do not encrypt
 plaintext Strand content. Logs can contain workspace details.
