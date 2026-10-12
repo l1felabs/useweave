@@ -2,11 +2,11 @@
   "schema": 1,
   "name": "joinweave",
   "version": "0.1.1",
-  "source_commit": "a6ed7e2a15eafd139051bcdf0a2956eeb08c24d8",
+  "source_commit": "d84f70d50eb7a86b2baf5af0f8b02904ca81f686",
   "archive": "joinweave-0.1.1.tgz",
-  "integrity": "sha512-9Na3e3C/fAKB7wHcaWgqgT5RSku+T60WbKWRBG54g7Ja4j9m99gcErAKXIg5yrKPDRgHXF0oypWa3+iqqpq3KQ==",
-  "sha256": "01e00eff3887687c7248fbb67271f27ed8c236039060d1f422b898c3d1c58f72",
-  "bytes": 16054,
+  "integrity": "sha512-2BEBfnJqMwXs49Jq7lE76l8XhUPMKWYX5cATV7vQKnl+mXauuiYys80z7LDariQvMd8ctYdZxKkn0yIe7VEWZA==",
+  "sha256": "4ea17e45c339125b6728e294b7ba44c39c166c3948e669ef476ce81540b27309",
+  "bytes": 16160,
   "files": [
     {
       "path": "LICENSE-APACHE",
@@ -30,7 +30,7 @@
     },
     {
       "path": "src/installer.js",
-      "sha256": "548f93f364f6d9ab1355a5e536be8b6a2788898adabf718e696e687c057d6cc0"
+      "sha256": "f863269c4504afc9405643652b509f36c3cda5bbda69af7bd3080aba5be658c5"
     }
   ],
   "native_package_version": "0.1.0",
