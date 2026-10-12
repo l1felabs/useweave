@@ -1,8 +1,7 @@
 # Weave MCP
 
-This source branch contains a **seventeen-tool candidate**. The published
-`@useweave/mcp@0.1.0` still exposes ten tools; the seven additional lifecycle,
-logging, statistics, listing and seeding tools below are not published yet.
+This source branch contains a **46-tool candidate**: 17 core operations, capability discovery and 28 data-model operations. The published
+`@useweave/mcp@0.1.0` still exposes ten tools. The expanded tools are not published yet.
 
 `@useweave/mcp` gives agents native Weave DHT and strand tools over MCP stdio.
 Install the workspace first with `npx joinweave`, then run:
