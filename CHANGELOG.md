@@ -5,6 +5,7 @@
 ## 0.1.3 — Compact native ownership receipt
 
 - Fix the actual0.1.2 fresh-service failure caused by embedding the full MCP dependency census in the native ownership receipt. Keep the unchanged64KiB native bound and store the exact census privately with a SHA256 binding. Migrate existing0.1.2 receipts before native operations, retaining modified trees and unrelated files.
+- Persist removal intent before deleting the MCP runtime/census; recover the final receipt-write crash window without authorizing a surviving tree through missing or changed ownership metadata.
 - Add real published-MCP receipt-size coverage and oversized legacy migration/removal regressions. All native/MCP versions and native behavior remain0.1.0; separate actual managed install acceptance is required before release.
 
 ## 0.1.2 — A woven terminal and a complete installed MCP runtime

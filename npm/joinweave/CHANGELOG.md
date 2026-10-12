@@ -2,6 +2,7 @@
 
 - Keep the native service ownership receipt below its unchanged64KiB limit. Store the MCP file census in a separate private file bound by SHA256 in the compact receipt, with exact hash/mode/path checks and journaled recovery.
 - Migrate0.1.2 embedded censuses before native service operations so existing installs can recover or uninstall safely. Preserve modified MCP trees, altered metadata and foreign census destinations.
+- Journal MCP removal before deleting either runtime or census. Resume the exact both-absent crash window safely, while refusing missing or altered census metadata beside a surviving runtime.
 - Exercise the real published MCP dependency tree with an explicit native receipt size regression, plus oversized legacy migration, retained-data removal and tamper refusal. Native CLI/MCP pins and the native receipt protocol remain0.1.0.
 
 ## 0.1.2 — 2026-10-12

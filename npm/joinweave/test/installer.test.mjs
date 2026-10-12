@@ -590,3 +590,40 @@ test('census tampering or a foreign migration destination is refused without ove
   await assert.rejects(f.installer().install(headless()), { code: 'MODIFIED_MCP_CENSUS' });
   assert.equal(fs.existsSync(old.runtime), true);
 });
+
+
+test('durable MCP removal recovers the exact crash after runtime and census unlink', async (t) => {
+  for (const action of ['uninstall', 'install']) {
+    const f = fixture(t); await f.installer().install(headless());
+    const owner = f.installer(); owner.loadManifest();
+    const save = owner.saveManifest.bind(owner);
+    owner.saveManifest = () => {
+      if (!owner.manifest.mcpRuntime) throw new Error('simulated crash after both unlinks, before final receipt write');
+      save();
+    };
+    assert.throws(() => owner.mcpRuntime.remove(), /simulated crash/);
+    assert.equal(fs.existsSync(owner.mcpRuntime.path), false);
+    assert.equal(fs.existsSync(owner.mcpRuntime.censusPath), false);
+    const journal = JSON.parse(fs.readFileSync(owner.manifestPath));
+    assert.equal(journal.mcpRuntime.removing, true);
+    const result = action === 'install' ? await f.installer().install(headless()) : await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+    assert.equal(result.ok, true);
+    if (action === 'install') {
+      assert.equal(fs.existsSync(owner.mcpRuntime.entry), true);
+      assert.equal(JSON.parse(fs.readFileSync(owner.manifestPath)).mcpRuntime.removing, undefined);
+    } else assert.equal(fs.existsSync(owner.manifestPath), false);
+  }
+});
+
+test('removal journal never substitutes for missing or modified census beside a surviving runtime', async (t) => {
+  for (const state of ['missing', 'modified']) {
+    const f = fixture(t); await f.installer().install(headless());
+    const owner = f.installer(); owner.loadManifest();
+    owner.manifest.mcpRuntime.removing = true; owner.saveManifest();
+    if (state === 'missing') fs.unlinkSync(owner.mcpRuntime.censusPath);
+    else fs.appendFileSync(owner.mcpRuntime.censusPath, ' ');
+    await assert.rejects(f.installer().install(headless()), { code: state === 'missing' ? 'MISSING_MCP_CENSUS' : 'MODIFIED_MCP_CENSUS' });
+    assert.equal(fs.existsSync(owner.mcpRuntime.entry), true);
+    assert.equal(JSON.parse(fs.readFileSync(owner.manifestPath)).mcpRuntime.removing, true);
+  }
+});

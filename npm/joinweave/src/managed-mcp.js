@@ -115,6 +115,7 @@ export class ManagedMcp {
       if (!this.stagingPath(receipt.census.staging, true)) fail('INVALID_MANIFEST', 'MCP census stage is not recognized.');
       path = receipt.census.staging;
     }
+    if (!fs.existsSync(path)) fail('MISSING_MCP_CENSUS', 'MCP ownership census is missing. A surviving runtime was preserved.');
     const bytes = privateCensus(path);
     if (sha(bytes) !== receipt.census.sha256) fail('MODIFIED_MCP_CENSUS', 'MCP census was modified. Its runtime and metadata were preserved.');
     let files; try { files = JSON.parse(bytes); } catch { fail('INVALID_MANIFEST', 'MCP census is invalid JSON.'); }
@@ -171,7 +172,9 @@ export class ManagedMcp {
 
   async install() {
     const owner = this.owner;
+    this.resumeRemoval();
     let receipt = owner.manifest.mcpRuntime;
+    if (receipt?.removing) fail('UNMANAGED_MCP_RUNTIME', 'The interrupted MCP removal preserved modified files. Resolve them before reinstalling.');
     assertSafePath(this.path);
     if (receipt?.staging) {
       if (!this.validReceipt(receipt) || !this.stagingPath(receipt.staging)) fail('INVALID_MANIFEST', 'MCP staging receipt is not recognized.');
@@ -228,20 +231,40 @@ export class ManagedMcp {
     }
   }
 
+  /** Persisted intent is required to recover an expected both-absent removal. */
+  resumeRemoval() {
+    const owner = this.owner, receipt = owner.manifest.mcpRuntime;
+    if (!receipt?.removing) return;
+    if (receipt.removing !== true || !this.validReceipt(receipt) || receipt.staging || receipt.census.staging) fail('INVALID_MANIFEST', 'MCP removal journal is not recognized.');
+    assertSafePath(this.path); assertSafePath(this.censusPath);
+    if (fs.existsSync(this.path)) {
+      // The journal alone never authorizes a surviving tree: its private census
+      // must still exist and match, and every file/mode must remain unchanged.
+      this.files(receipt);
+      if (owner.warnings.length || !this.unchanged(receipt)) { owner.warnings.push('Preserved modified or still-referenced MCP runtime.'); return; }
+      if (!this.unchanged(receipt)) fail('CONCURRENT_EDIT', 'MCP runtime changed while resuming removal.');
+      fs.rmSync(this.path, { recursive: true });
+    }
+    if (fs.existsSync(this.censusPath)) {
+      this.files(receipt);
+      fs.unlinkSync(this.censusPath);
+    }
+    // A crash after either unlink leaves the durable marker. Both-absent is
+    // safe only on this explicitly journaled path; no foreign file is adopted.
+    delete owner.manifest.mcpRuntime; owner.saveManifest();
+  }
+
   remove() {
     const owner = this.owner, receipt = owner.manifest.mcpRuntime;
     if (!receipt) return;
+    if (receipt.removing) { this.resumeRemoval(); return; }
     if (!this.validReceipt(receipt)) fail('INVALID_MANIFEST', 'MCP runtime receipt is not recognized.');
     if (receipt.staging) { owner.warnings.push('Preserved a recoverable MCP staging receipt. Rerun installation before uninstalling it.'); return; }
     this.files(receipt);
     assertSafePath(this.path);
-    if (fs.existsSync(this.path)) {
-      if (owner.warnings.length || !this.unchanged(receipt)) { owner.warnings.push('Preserved modified or still-referenced MCP runtime.'); return; }
-      if (!this.unchanged(receipt)) fail('CONCURRENT_EDIT', 'MCP runtime changed while preparing removal.');
-      fs.rmSync(this.path, { recursive: true });
-    }
-    if (sha(privateCensus(this.censusPath)) !== receipt.census.sha256) fail('MODIFIED_MCP_CENSUS', 'MCP census changed during removal.');
-    fs.unlinkSync(this.censusPath);
-    delete owner.manifest.mcpRuntime; owner.saveManifest();
+    if (fs.existsSync(this.path) && (owner.warnings.length || !this.unchanged(receipt))) { owner.warnings.push('Preserved modified or still-referenced MCP runtime.'); return; }
+    receipt.removing = true;
+    owner.saveManifest();
+    this.resumeRemoval();
   }
 }
