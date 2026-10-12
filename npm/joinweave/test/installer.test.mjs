@@ -17,7 +17,7 @@ function fixture(t, { platform = 'linux', response, homeName = 'home with spaces
   const commands = [];
   const run = async (command, args, options) => {
     commands.push({ command, args, options });
-    if (response) { const value = await response(command, args); if (value) return value; }
+    if (response) { const value = await response(command, args, options); if (value) return value; }
     if (command === 'systemctl' && args.includes('is-active')) return { code: 3, stdout: '', stderr: '' };
     if (command === 'launchctl' && args[0] === 'print') return { code: 113, stdout: '', stderr: 'Bad request.\nCould not find service "com.useweave.node" in domain for user gui: 501\n' };
     return { code: 0, stdout: JSON.stringify({ ok: true, peer_count: 1 }), stderr: '' };
@@ -207,6 +207,40 @@ test('persistent launchd registration reaches a bounded failure without deleting
   assert.equal(fs.existsSync(definition), true);
   assert.deepEqual(fs.readFileSync(receiptPath), receipt);
   assert.equal(fs.readFileSync(retained, 'utf8'), 'keep');
+});
+
+test('launchd command time consumes the shutdown budget and late absence preserves files', async (t) => {
+  let stopping = false, clock = 0, checks = 0;
+  const f = fixture(t, { platform: 'darwin', response: (command, args, options) => {
+    if (!stopping || command !== 'launchctl') return null;
+    if (args[0] === 'bootout') {
+      assert.equal(options.timeout, 10_000);
+      clock += 6_000;
+      return { code: 0, stdout: '', stderr: '' };
+    }
+    if (args[0] === 'print') {
+      assert.equal(options.timeout, checks === 0 ? 4_000 : 2_900);
+      if (++checks === 1) {
+        clock += 1_000;
+        return { code: 0, stdout: 'state = running', stderr: '' };
+      }
+      clock += 3_000;
+      return { code: 113, stdout: '', stderr: 'Could not find service "com.useweave.node" in domain for user gui: 501' };
+    }
+    return null;
+  } });
+  f.settings.now = () => clock;
+  f.settings.sleep = async (ms) => { clock += ms; };
+  const installed = await f.installer().install(parseArgs(['--yes']));
+  const receiptPath = join(installed.workspace, '.joinweave-install.json');
+  const receipt = fs.readFileSync(receiptPath);
+  const definition = JSON.parse(receipt).service.path;
+  stopping = true;
+  await assert.rejects(f.installer().uninstall(parseArgs(['uninstall', '--yes'])), { code: 'SERVICE_STOP_FAILED' });
+  assert.equal(checks, 2);
+  assert.equal(fs.existsSync(installed.binary), true);
+  assert.equal(fs.existsSync(definition), true);
+  assert.deepEqual(fs.readFileSync(receiptPath), receipt);
 });
 
 test('unknown service shutdown preserves the binary and managed definition', async (t) => {

@@ -238,26 +238,30 @@ export class Installer {
     return { path: join(this.home, '.config', 'systemd', 'user', 'weave-node.service'), bytes: Buffer.from(`[Unit]\nDescription=Weave peer node\nAfter=network.target\n\n[Service]\nType=simple\nExecStart=${systemdQuote(this.binary, true)} node run\n${entries}WorkingDirectory=${systemdPath(this.weaveHome)}\nRestart=on-failure\nRestartSec=5\nStandardOutput=append:${systemdPath(logPath)}\nStandardError=append:${systemdPath(logPath)}\n\n[Install]\nWantedBy=default.target\n`) };
   }
 
-  async serviceCommand(args, required = true) {
+  async serviceCommand(args, required = true, timeout = 30_000) {
     const command = this.platform === 'darwin' ? 'launchctl' : 'systemctl';
-    const result = await this.run(command, args, { env: this.env, timeout: 30_000 });
+    const result = await this.run(command, args, { env: this.env, timeout });
     if (required && result.code !== 0) fail('SERVICE_COMMAND_FAILED', `${command} ${args.join(' ')} failed. Confirm a logged-in user service session is available; use --no-service for a detached node.`);
     return result;
   }
 
   async stopService() {
     if (this.platform === 'darwin') {
-      await this.serviceCommand(['bootout', `gui/${this.uid}/${serviceName}`], false);
       const deadline = this.now() + 10_000;
+      const timeoutMessage = 'Timed out waiting for launchd deregistration. Its binary and configuration were preserved.';
+      await this.serviceCommand(['bootout', `gui/${this.uid}/${serviceName}`], false, 10_000);
       for (;;) {
-        const status = await this.serviceCommand(['print', `gui/${this.uid}/${serviceName}`], false);
+        const remaining = deadline - this.now();
+        if (remaining <= 0) fail('SERVICE_STOP_FAILED', timeoutMessage);
+        const status = await this.serviceCommand(['print', `gui/${this.uid}/${serviceName}`], false, remaining);
+        const checkedAt = this.now();
+        if (checkedAt >= deadline) fail('SERVICE_STOP_FAILED', timeoutMessage);
         if (status.code !== 0) {
           const missing = `Could not find service "${serviceName}" in domain for user gui: ${this.uid}`;
           if (status.code !== 113 || !status.stderr.includes(missing)) fail('SERVICE_STOP_UNKNOWN', 'Could not verify launchd shutdown. Its binary and configuration were preserved.');
           break;
         }
-        if (this.now() >= deadline) fail('SERVICE_STOP_FAILED', 'The launchd node remains registered. Its binary and configuration were preserved.');
-        await this.sleep(100);
+        await this.sleep(Math.min(100, deadline - checkedAt));
       }
     } else {
       await this.serviceCommand(['--user', 'disable', '--now', 'weave-node.service'], false);
