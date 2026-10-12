@@ -3,8 +3,9 @@ import { homedir, hostname } from 'node:os';
 import { resolve, join, dirname, isAbsolute, parse } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
+import { ManagedMcp } from './managed-mcp.js';
 
-export const VERSION = '0.1.1';
+export const VERSION = '0.1.2';
 const NATIVE_PACKAGE_VERSION = '0.1.0';
 // Published native0.1.0 treats this as its service-ownership protocol version.
 const RECEIPT_VERSION = '0.1.0';
@@ -24,7 +25,7 @@ const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const regular = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 export function parseArgs(args) {
-  const options = { action: 'install', yes: false, json: false, noService: false, noMcp: false, path: false, purge: false, mcpClients: [] };
+  const options = { action: 'install', yes: false, json: false, noService: false, noMcp: false, noAnimation: false, path: false, purge: false, mcpClients: [] };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === 'uninstall' && i === 0) options.action = 'uninstall';
@@ -32,6 +33,7 @@ export function parseArgs(args) {
     else if (arg === '--json') options.json = true;
     else if (arg === '--no-service') options.noService = true;
     else if (arg === '--no-mcp') options.noMcp = true;
+    else if (arg === '--no-animation') options.noAnimation = true;
     else if (arg === '--path') options.path = true;
     else if (arg === '--purge') options.purge = true;
     else if (arg === '--help' || arg === '-h') options.help = true;
@@ -114,8 +116,8 @@ function unlinkIfUnchanged(path, expectedHash) {
   return true;
 }
 
-export function runCommand(command, args, { env = process.env, timeout = 60_000 } = {}) {
-  return new Promise((done) => execFile(command, args, { env, timeout, maxBuffer: 2 * 1024 * 1024, encoding: 'utf8', shell: false }, (error, stdout, stderr) => {
+export function runCommand(command, args, { env = process.env, timeout = 60_000, cwd, signal } = {}) {
+  return new Promise((done) => execFile(command, args, { env, timeout, cwd, signal, maxBuffer: 2 * 1024 * 1024, encoding: 'utf8', shell: false }, (error, stdout, stderr) => {
     done({ code: error ? (typeof error.code === 'number' ? error.code : 1) : 0, stdout, stderr });
   }));
 }
@@ -127,7 +129,7 @@ const systemdPath = (value) => value.replaceAll('%', '%%');
 const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 
 export class Installer {
-  constructor({ home = homedir(), weaveHome = process.env.WEAVE_HOME || join(home, '.weave'), platform = process.platform, uid = process.getuid?.(), env = process.env, run = runCommand, resolveNative, confirm = async () => false, progress = () => {}, sleep = (ms) => new Promise((done) => setTimeout(done, ms)), now = Date.now } = {}) {
+  constructor({ home = homedir(), weaveHome = process.env.WEAVE_HOME || join(home, '.weave'), platform = process.platform, uid = process.getuid?.(), env = process.env, run = runCommand, resolveNative, confirm = async () => false, progress = () => {}, stage = () => {}, signal, nodePath = process.execPath, npmCli, sleep = (ms) => new Promise((done) => setTimeout(done, ms)), now = Date.now } = {}) {
     this.home = resolve(home);
     this.weaveHome = resolve(weaveHome);
     if ([this.home, this.weaveHome].some((path) => /[\x00-\x1f\x7f]/.test(path))) fail('UNSAFE_PATH', 'Workspace and home paths cannot contain control characters.');
@@ -141,6 +143,11 @@ export class Installer {
     this.resolveNative = resolveNative;
     this.confirm = confirm;
     this.progress = progress;
+    this.stage = stage;
+    this.signal = signal;
+    this.nodePath = nodePath;
+    this.npmCli = npmCli;
+    this.mcpRuntime = new ManagedMcp(this);
     this.sleep = sleep;
     this.now = now;
     this.binary = join(this.weaveHome, 'bin', 'weave');
@@ -191,7 +198,7 @@ export class Installer {
   }
 
   async native(args, label, timeout = 60_000) {
-    const result = await this.run(this.binary, args, { env: this.env, timeout });
+    const result = await this.run(this.binary, args, { env: this.env, timeout, signal: this.signal });
     if (result.code !== 0) fail('NATIVE_COMMAND_FAILED', `${label} failed (exit ${result.code}). Run ${this.binary} ${args.join(' ')} to inspect the runtime result.`);
     let data;
     try { data = JSON.parse(result.stdout); } catch { fail('INVALID_NATIVE_RESULT', `${label} did not return valid JSON.`); }
@@ -243,7 +250,7 @@ export class Installer {
 
   async serviceCommand(args, required = true, timeout = 30_000) {
     const command = this.platform === 'darwin' ? 'launchctl' : 'systemctl';
-    const result = await this.run(command, args, { env: this.env, timeout });
+    const result = await this.run(command, args, { env: this.env, timeout, signal: this.signal });
     if (required && result.code !== 0) fail('SERVICE_COMMAND_FAILED', `${command} ${args.join(' ')} failed. Confirm a logged-in user service session is available; use --no-service for a detached node.`);
     return result;
   }
@@ -341,12 +348,21 @@ export class Installer {
     return detected;
   }
 
-  mcpDefinition() {
+  legacyMcpDefinition() {
     return { command: 'npx', args: ['--yes', '@useweave/mcp@0.1.0'], env: { WEAVE_HOME: this.weaveHome, WEAVE_BINARY: this.binary } };
   }
 
-  mcpTomlBlock() {
-    return `${MCP_BEGIN}\n[mcp_servers.weave]\ncommand = "npx"\nargs = ["--yes", "@useweave/mcp@0.1.0"]\n\n[mcp_servers.weave.env]\nWEAVE_HOME = ${JSON.stringify(this.weaveHome)}\nWEAVE_BINARY = ${JSON.stringify(this.binary)}\n${MCP_END}\n`;
+  mcpDefinition() {
+    return { command: this.nodePath, args: [this.mcpRuntime.entry], env: { WEAVE_HOME: this.weaveHome, WEAVE_BINARY: this.binary } };
+  }
+
+  mcpTomlBlock(spec = this.mcpDefinition()) {
+    return `${MCP_BEGIN}\n[mcp_servers.weave]\ncommand = ${JSON.stringify(spec.command)}\nargs = [${spec.args.map((arg) => JSON.stringify(arg)).join(', ')}]\n\n[mcp_servers.weave.env]\nWEAVE_HOME = ${JSON.stringify(this.weaveHome)}\nWEAVE_BINARY = ${JSON.stringify(this.binary)}\n${MCP_END}\n`;
+  }
+
+  recognizedMcpReceipt(receipt) {
+    const specs = [this.mcpDefinition(), this.legacyMcpDefinition()];
+    return specs.some((spec) => receipt.format === 'json' ? JSON.stringify(receipt.spec) === JSON.stringify(spec) : receipt.block === this.mcpTomlBlock(spec));
   }
 
   installMcp(client) {
@@ -363,7 +379,7 @@ export class Installer {
       if (!regular(config) || (config.mcpServers !== undefined && !regular(config.mcpServers))) fail('INVALID_CLIENT_CONFIG', `${client} config has an unsupported MCP structure. It will not be changed.`);
       config.mcpServers ||= {};
       if (Object.hasOwn(config.mcpServers, 'weave')) {
-        if (!previous || previous.path !== path || JSON.stringify(previous.spec) !== JSON.stringify(spec) || JSON.stringify(config.mcpServers.weave) !== JSON.stringify(previous.spec)) fail('MCP_ENTRY_CONFLICT', `${client} already has an unrelated or modified weave MCP entry. It will not be changed.`);
+        if (!previous || previous.path !== path || !this.recognizedMcpReceipt(previous) || JSON.stringify(config.mcpServers.weave) !== JSON.stringify(previous.spec)) fail('MCP_ENTRY_CONFLICT', `${client} already has an unrelated or modified weave MCP entry. It will not be changed.`);
       }
       config.mcpServers.weave = spec;
       bytes = Buffer.from(`${JSON.stringify(config, null, 2)}\n`);
@@ -372,8 +388,8 @@ export class Installer {
       const text = old?.toString('utf8') || '';
       const block = this.mcpTomlBlock();
       let next = text;
-      if (previous?.path === path && previous.block !== block) fail('INVALID_MANIFEST', 'The Codex MCP receipt is not a recognized Weave server definition.');
-      if (previous?.path === path && text.includes(block)) next = text.replace(block, '');
+      if (previous?.path === path && !this.recognizedMcpReceipt(previous)) fail('INVALID_MANIFEST', 'The Codex MCP receipt is not a recognized Weave server definition.');
+      if (previous?.path === path && text.includes(previous.block)) next = text.replace(previous.block, '');
       // Do not guess at inline/quoted TOML tables or overwrite foreign definitions.
       if (/^\s*\[\[?\s*(?:mcp_servers|["']mcp_servers["'])\s*\./m.test(next) && /^\s*\[\[?\s*(?:mcp_servers|["']mcp_servers["'])\s*\.\s*(?:weave|["']weave["'])\s*(?:\.|\])/m.test(next)) fail('MCP_ENTRY_CONFLICT', 'Codex already has a weave MCP table. It will not be changed.');
       if (next.includes(MCP_BEGIN) || next.includes(MCP_END) || /^\s*(?:mcp_servers|["']mcp_servers["'])\s*=/m.test(next) || /^\s*\[\s*(?:mcp_servers|["']mcp_servers["'])\s*\]\s*$/m.test(next)) fail('INVALID_CLIENT_CONFIG', 'Codex config uses a structure that cannot be merged safely. Add the Weave MCP entry manually.');
@@ -392,20 +408,30 @@ export class Installer {
     this.lock();
     try {
       this.loadManifest();
+      this.stage({ id: 'runtime', label: 'Installing the native runtime' });
       this.installBinary();
       ensureDirectory(this.shared, 0o755);
-      await this.native(['init', '--json'], 'Workspace initialization');
+      this.stage({ id: 'identity', label: 'Opening your workspace and local identity' });
+      const initialized = await this.native(['init', '--json'], 'Workspace initialization');
       this.progress('Created your workspace and identity');
+      this.stage({ id: 'node', label: options.noService ? 'Starting your peer node' : 'Starting your supervised peer node' });
       if (options.noService) {
         // A rerun switching off service management must not leave two runtime owners.
         if (this.manifest.service) await this.removeService();
         if (this.manifest.service) fail('MODIFIED_SERVICE', 'The modified service was preserved. Stop and remove it before starting a detached node.');
         await this.native(['node', 'start', '--json'], 'Detached node startup');
+        this.progress('Started the detached node');
       } else {
         // Stop an earlier detached runtime before the service takes ownership.
         await this.native(['node', 'stop', '--json'], 'Node shutdown before service startup');
         await this.installService();
       }
+      this.stage({ id: 'mcp', label: options.noMcp ? 'Keeping MCP installation disabled' : 'Installing the persistent MCP server' });
+      if (!options.noMcp) {
+        await this.mcpRuntime.install();
+        this.progress('Installed the MCP server');
+      } else this.progress('MCP installation skipped');
+      this.stage({ id: 'clients', label: 'Choosing your agent connections' });
       const detected = this.detectClients();
       if (options.path || (!options.yes && !options.json && await this.confirm('Add Weave to your shell PATH?'))) this.installPath();
       const selected = [...options.mcpClients];
@@ -414,9 +440,16 @@ export class Installer {
       }
       for (const client of selected) this.installMcp(client);
       // Doctor owns connectivity, peer and announce/find validation. Never turn a failed doctor into success.
+      this.stage({ id: 'verify', label: 'Verifying live peer connectivity' });
       const doctor = await this.readyDoctor();
       this.progress('Verified Weave connectivity');
-      return { ok: true, action: 'install', version: VERSION, binary: this.binary, workspace: this.weaveHome, shared: this.shared, service: { managed: !options.noService, running: true }, pathAdded: Boolean(this.manifest.path), mcpClients: Object.keys(this.manifest.mcp), detectedMcpClients: detected, manualMcpClients: this.manualMcp, doctor, next: this.manifest.path ? 'weave doctor' : `${this.binary} doctor` };
+      return { ok: true, action: 'install', version: VERSION, binary: this.binary, workspace: this.weaveHome, shared: this.shared, service: { managed: !options.noService, running: true }, pathAdded: Boolean(this.manifest.path), mcpClients: Object.keys(this.manifest.mcp), detectedMcpClients: detected, manualMcpClients: this.manualMcp, doctor, components: [
+        { id: 'runtime', name: 'Native CLI', version: NATIVE_PACKAGE_VERSION, status: 'installed', path: this.binary },
+        { id: 'identity', name: 'Local identity', status: 'ready', localOnly: true },
+        { id: 'node', name: 'Peer node', status: 'running', managed: !options.noService },
+        { id: 'workspace', name: 'Workspace', status: 'ready', path: this.shared },
+        { id: 'mcp', name: 'Agent MCP server', version: NATIVE_PACKAGE_VERSION, status: options.noMcp ? 'skipped' : 'installed', ...(options.noMcp ? {} : { command: this.nodePath, entry: this.mcpRuntime.entry }) },
+      ], initialization: initialized, next: this.manifest.path ? 'weave doctor' : `${this.binary} doctor` };
     } finally { this.unlock(); }
   }
 
@@ -454,7 +487,7 @@ export class Installer {
     if (!clients.has(client)) fail('INVALID_MANIFEST', 'Unknown MCP client in the installation receipt.');
     const receipt = this.manifest.mcp[client], expected = this.clientDefinition(client);
     if (receipt.path !== expected.path || receipt.format !== expected.format) fail('INVALID_MANIFEST', 'MCP receipt does not match this user.');
-    if (expected.format === 'json' && JSON.stringify(receipt.spec) !== JSON.stringify(this.mcpDefinition())) fail('INVALID_MANIFEST', 'MCP receipt is not a recognized Weave server definition.');
+    if (!this.recognizedMcpReceipt(receipt)) fail('INVALID_MANIFEST', 'MCP receipt is not a recognized Weave server definition.');
     const old = readFile(expected.path);
     if (old) {
       let bytes;
@@ -469,7 +502,7 @@ export class Installer {
         }
       } else {
         const text = old.toString('utf8');
-        if (receipt.block !== this.mcpTomlBlock()) fail('INVALID_MANIFEST', 'MCP block receipt is not a recognized Weave server definition.');
+        if (!this.recognizedMcpReceipt(receipt)) fail('INVALID_MANIFEST', 'MCP block receipt is not a recognized Weave server definition.');
         if (!text.includes(receipt.block)) { this.warnings.push('Preserved modified Codex weave MCP entry.'); return; }
         bytes = Buffer.from(text.replace(receipt.block, ''));
       }
@@ -489,6 +522,7 @@ export class Installer {
       this.loadManifest();
       const known = readFile(this.manifestPath);
       if (!known) fail('NO_INSTALL_RECEIPT', 'No joinweave installation receipt exists. Existing files will not be removed.');
+      this.stage({ id: 'node', label: 'Stopping the owned background node' });
       await this.removeService();
       if (this.manifest.service) fail('MODIFIED_SERVICE', 'The modified service was preserved. Stop and remove it before uninstalling the binary.');
       const binary = readFile(this.binary);
@@ -500,6 +534,8 @@ export class Installer {
       } else if (binary) this.warnings.push('Preserved unrelated or modified executable.');
       this.removePath();
       for (const client of Object.keys(this.manifest.mcp)) this.removeMcp(client);
+      this.stage({ id: 'mcp', label: 'Removing owned tools and connections' });
+      this.mcpRuntime.remove();
       if (options.purge && this.warnings.length) fail('PURGE_BLOCKED', 'Modified installer entries were preserved. Resolve them before purging workspace data.');
       if (!this.warnings.length) {
         const receipt = readFile(this.manifestPath);

@@ -7,6 +7,7 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { Installer, parseArgs } from '../src/installer.js';
+import { MCP_INTEGRITY } from '../src/managed-mcp.js';
 
 function fixture(t, { platform = 'linux', response, homeName = 'home with spaces' } = {}) {
   const scratch = fs.realpathSync(fs.mkdtempSync(join(tmpdir(), 'joinweave-test-')));
@@ -18,11 +19,18 @@ function fixture(t, { platform = 'linux', response, homeName = 'home with spaces
   const run = async (command, args, options) => {
     commands.push({ command, args, options });
     if (response) { const value = await response(command, args, options); if (value) return value; }
+    if (args[1] === 'install' && args.includes('--prefix')) {
+      const stage = args[args.indexOf('--prefix') + 1];
+      fs.mkdirSync(join(stage, 'node_modules/@useweave/mcp/bin'), { recursive: true });
+      fs.writeFileSync(join(stage, 'node_modules/@useweave/mcp/package.json'), JSON.stringify({ name: '@useweave/mcp', version: '0.1.0', bin: { 'weave-mcp': 'bin/weave-mcp.js' } }));
+      fs.writeFileSync(join(stage, 'node_modules/@useweave/mcp/bin/weave-mcp.js'), '// fixture MCP entry\n');
+      fs.writeFileSync(join(stage, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: { '': {}, 'node_modules/@useweave/mcp': { version: '0.1.0', resolved: 'https://registry.npmjs.org/@useweave/mcp/-/mcp-0.1.0.tgz', integrity: MCP_INTEGRITY } } }));
+    }
     if (command === 'systemctl' && args.includes('is-active')) return { code: 3, stdout: '', stderr: '' };
     if (command === 'launchctl' && args[0] === 'print') return { code: 113, stdout: '', stderr: 'Bad request.\nCould not find service "com.useweave.node" in domain for user gui: 501\n' };
     return { code: 0, stdout: JSON.stringify({ ok: true, peer_count: 1 }), stderr: '' };
   };
-  const settings = { home, weaveHome: join(home, '.weave'), platform, uid: 501, env: { SHELL: '/bin/zsh' }, run, resolveNative: () => source, sleep: async () => {} };
+  const settings = { home, weaveHome: join(home, '.weave'), platform, uid: 501, env: { SHELL: '/bin/zsh' }, run, resolveNative: () => source, npmCli: join(scratch, 'npm-cli.js'), sleep: async () => {} };
   return { home, source, commands, installer: () => new Installer(settings), settings };
 }
 const headless = () => parseArgs(['--yes', '--json', '--no-service']);
@@ -54,7 +62,8 @@ test('explicit consent merges MCP and PATH; uninstall removes only owned entries
   const merged = JSON.parse(fs.readFileSync(config, 'utf8'));
   assert.equal(merged.userPreference, 'keep');
   assert.equal(merged.mcpServers.other.command, 'existing');
-  assert.deepEqual(merged.mcpServers.weave.args, ['--yes', '@useweave/mcp@0.1.0']);
+  assert.equal(merged.mcpServers.weave.command, process.execPath);
+  assert.deepEqual(merged.mcpServers.weave.args, [join(installed.workspace, 'tools/mcp-0.1.0/node_modules/@useweave/mcp/bin/weave-mcp.js')]);
   assert.equal(merged.mcpServers.weave.env.WEAVE_BINARY, installed.binary);
   fs.writeFileSync(join(installed.workspace, 'identity-test'), 'retain');
   fs.writeFileSync(join(installed.shared, 'shared-strand'), 'retain');
@@ -175,7 +184,7 @@ test('launchd teardown waits for deregistration before removing managed files', 
   installed = await f.installer().install(parseArgs(['--yes']));
   const receipt = JSON.parse(fs.readFileSync(join(installed.workspace, '.joinweave-install.json'), 'utf8'));
   assert.equal(receipt.version, '0.1.0');
-  assert.equal(receipt.installerVersion, '0.1.1');
+  assert.equal(receipt.installerVersion, '0.1.2');
   assert.equal(receipt.binary.version, '0.1.0');
   definition = receipt.service.path;
   const retained = join(installed.workspace, 'retained-strand');
@@ -360,4 +369,104 @@ test('JSON CLI mode returns one parseable result for help and argument failures'
     assert.equal(error.stdout.trim().split('\n').length, 1);
     assert.equal(JSON.parse(error.stdout).error.code, 'INVALID_ARGUMENT');
   }
+});
+
+
+test('persistent MCP is staged once, pinned, script-free, and retained on modifications', async (t) => {
+  const f = fixture(t), stages = [];
+  f.settings.stage = ({ id }) => stages.push(id);
+  const first = await f.installer().install(headless());
+  const entry = first.components.find((c) => c.id === 'mcp').entry;
+  assert.equal(fs.existsSync(entry), true);
+  await f.installer().install(headless());
+  const installs = f.commands.filter((c) => c.args[1] === 'install');
+  assert.equal(installs.length, 1);
+  assert.ok(installs[0].args.includes('--ignore-scripts'));
+  assert.ok(installs[0].args.includes('--bin-links=false'));
+  assert.ok(installs[0].args.includes('--omit=optional'));
+  assert.ok(installs[0].args.includes('--registry=https://registry.npmjs.org'));
+  assert.deepEqual(stages.slice(0, 6), ['runtime', 'identity', 'node', 'mcp', 'clients', 'verify']);
+  fs.appendFileSync(entry, '// local change\n');
+  await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_RUNTIME' });
+  const removed = await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+  assert.equal(removed.ok, false);
+  assert.equal(fs.existsSync(entry), true);
+});
+
+test('npm failure never promotes a partial MCP runtime or reports ready', async (t) => {
+  const f = fixture(t, { response: (_, args) => args[1] === 'install' ? { code: 1, stdout: '', stderr: 'failure' } : null });
+  await assert.rejects(f.installer().install(headless()), { code: 'MCP_INSTALL_FAILED' });
+  assert.equal(fs.existsSync(join(f.home, '.weave/tools/mcp-0.1.0')), false);
+  assert.deepEqual(fs.readdirSync(join(f.home, '.weave/tools')), []);
+  assert.equal(fs.existsSync(join(f.home, '.weave/bin/weave')), true);
+  assert.equal(f.commands.some((c) => c.args[0] === 'doctor'), false);
+});
+
+test('--no-mcp skips the managed server and client prompts without invented inventory', async (t) => {
+  const f = fixture(t);
+  const result = await f.installer().install(parseArgs(['--yes', '--no-service', '--no-mcp']));
+  assert.equal(f.commands.some((c) => c.args[1] === 'install'), false);
+  assert.equal(result.components.find((c) => c.id === 'mcp').status, 'skipped');
+  assert.deepEqual(result.mcpClients, []);
+});
+
+test('explicit consent migrates owned legacy MCP definitions; headless does not', async (t) => {
+  for (const client of ['cursor', 'codex']) {
+    const f = fixture(t), owner = f.installer();
+    await owner.install(headless());
+    const definition = owner.clientDefinition(client), legacy = owner.legacyMcpDefinition();
+    fs.mkdirSync(join(definition.path, '..'), { recursive: true });
+    const receipt = JSON.parse(fs.readFileSync(owner.manifestPath, 'utf8'));
+    if (client === 'cursor') {
+      fs.writeFileSync(definition.path, JSON.stringify({ mcpServers: { weave: legacy, other: { command: 'keep' } } }));
+      receipt.mcp[client] = { ...definition, spec: legacy };
+    } else {
+      const block = owner.mcpTomlBlock(legacy);
+      fs.writeFileSync(definition.path, 'model = "keep"\n' + block);
+      receipt.mcp[client] = { ...definition, block };
+    }
+    fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
+    const before = fs.readFileSync(definition.path);
+    await f.installer().install(headless());
+    assert.deepEqual(fs.readFileSync(definition.path), before);
+    await f.installer().install(parseArgs(['--yes', '--no-service', `--mcp-client=${client}`]));
+    assert.ok(fs.readFileSync(definition.path, 'utf8').includes('weave-mcp.js'));
+    assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
+    assert.ok(fs.readFileSync(definition.path, 'utf8').includes('keep'));
+  }
+});
+
+test('runtime census rejects foreign trees, added files and symlinks without deleting them', async (t) => {
+  const f = fixture(t);
+  await f.installer().install(headless());
+  const runtime = join(f.home, '.weave/tools/mcp-0.1.0');
+  fs.writeFileSync(join(runtime, 'unrelated'), 'preserve');
+  await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_RUNTIME' });
+  const removed = await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+  assert.equal(removed.ok, false);
+  assert.equal(fs.readFileSync(join(runtime, 'unrelated'), 'utf8'), 'preserve');
+  fs.unlinkSync(join(runtime, 'unrelated'));
+  fs.symlinkSync(f.source, join(runtime, 'foreign-link'));
+  await assert.rejects(f.installer().install(headless()), { code: 'UNSAFE_MCP_TREE' });
+  assert.equal(fs.readFileSync(f.source, 'utf8'), '#!/bin/sh\nexit 0\n');
+});
+
+test('an interrupted MCP atomic commit recovers its exact journaled stage and preserves mismatches', async (t) => {
+  const f = fixture(t), owner = f.installer();
+  await owner.install(headless());
+  const receipt = JSON.parse(fs.readFileSync(owner.manifestPath, 'utf8'));
+  const runtime = owner.mcpRuntime.path, stage = join(runtime, '..', '.mcp-00000000-0000-0000-0000-000000000000.staging');
+  fs.renameSync(runtime, stage);
+  receipt.mcpRuntime.staging = stage;
+  fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
+  const restored = await f.installer().install(headless());
+  assert.equal(restored.ok, true);
+  assert.equal(fs.existsSync(stage), false);
+  assert.equal(f.commands.filter((c) => c.args[1] === 'install').length, 1);
+  assert.equal(JSON.parse(fs.readFileSync(owner.manifestPath, 'utf8')).mcpRuntime.staging, undefined);
+  fs.renameSync(runtime, stage);
+  fs.appendFileSync(join(stage, 'node_modules/@useweave/mcp/bin/weave-mcp.js'), '// modified');
+  fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
+  await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_RUNTIME' });
+  assert.equal(fs.existsSync(stage), true);
 });
