@@ -1,48 +1,31 @@
-name: Joinweave installer patch
+name: Joinweave installer patch provenance
 on:
-  push:
-    branches: [codex/joinweave-launchd-stop-wait]
   workflow_dispatch:
+    inputs:
+      approved_ops_commit:
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
   group: joinweave-installer-0.1.1
   cancel-in-progress: false
 jobs:
-  qualify:
-    runs-on: depot-ubuntu-24.04-8
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
-        with:
-          node-version: '22.23.3'
-      - name: Install pinned workspace test dependencies
-        working-directory: npm
-        run: npm install --ignore-scripts --no-package-lock --no-audit --no-fund
-      - name: Check affected installer and existing Node package contracts
-        working-directory: npm
-        env:
-          WEAVE_VERIFY_SYSTEMD: '1'
-        run: npm test
-      - name: Package reviewed installer files on Depot
-        run: node scripts/pack-installer-patch.mjs "$GITHUB_WORKSPACE" "$GITHUB_WORKSPACE/build/installer-patch"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: joinweave-installer-patch-input-${{ github.run_id }}
-          path: build/installer-patch/
-          if-no-files-found: error
-          retention-days: 30
   attest:
-    needs: qualify
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
     timeout-minutes: 10
     steps:
+      - name: Require exact reviewed operations commit
+        env:
+          APPROVED_OPS_COMMIT: ${{ inputs.approved_ops_commit }}
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_OPS_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$APPROVED_OPS_COMMIT"
+          test "$RUNNER_ENVIRONMENT" = github-hosted
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
@@ -50,12 +33,10 @@ jobs:
         with:
           node-version: '22.23.3'
       - run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: joinweave-installer-patch-input-${{ github.run_id }}
-          path: patch-input
-      - name: Sign verified Depot archive for direct npm CLI publication
-        run: node scripts/attest-installer-patch.mjs patch-input patch-release
+      - name: Verify qualified Depot archive and sign for direct npm CLI publication
+        env:
+          APPROVED_OPS_COMMIT: ${{ inputs.approved_ops_commit }}
+        run: node scripts/attest-installer-patch.mjs release/installer-0.1.1 patch-release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: joinweave-installer-patch-release-${{ github.run_id }}
