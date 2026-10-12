@@ -1,3 +1,9 @@
+## 0.1.2 — A woven terminal and a complete installed MCP runtime
+
+- Add a responsive 3D ASCII weave driven by real install stages, with prompt pause, interruption cleanup, JSON/headless behavior and an explicit motion opt-out. Report the actual installed CLI, identity, node, workspace and agent tooling.
+- Install the pinned MCP server into a verified, owned persistent directory; configure clients only with consent and preserve modified runtimes/configuration during uninstall. Native, CLI and MCP versions remain 0.1.0.
+- Qualify exact public package source and actual MCP stdio discovery on the established private Depot runner, then bind and attest the unchanged archive in public GitHub CI for npm CLI publication. Depot run 38275855056 passes all 55 package checks, including a real installed MCP server and interrupt/Node-migration regressions. Commit the unchanged qualified archive and evidence for public provenance. No desktop app is bundled in this installer release.
+
 ## 2026-10-12 08:21 CT — Public installer patch verified
 
 - Publish joinweave 0.1.1 through npm CLI with exact archive and cryptographic provenance verification, then revoke its scoped credential. Fresh Mac and Ubuntu24.04 registry installs pass doctor/live peers, supervised restart and crash recovery, canonical unversioned npx rerun and retained-data uninstall. Restore ONE's original identity/data after clean acceptance and retain the test workspace separately. Add a public installation quickstart and identify the immutable v0.1.0 verification path.
