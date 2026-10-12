@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import { homedir, hostname } from 'node:os';
-import { resolve, join, dirname, isAbsolute, parse } from 'node:path';
+import { resolve, join, dirname, basename, isAbsolute, parse } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { ManagedMcp } from './managed-mcp.js';
@@ -116,10 +116,58 @@ function unlinkIfUnchanged(path, expectedHash) {
   return true;
 }
 
+/** Callback errors can precede close. Ownership is released only after close. */
 export function runCommand(command, args, { env = process.env, timeout = 60_000, cwd, signal } = {}) {
-  return new Promise((done) => execFile(command, args, { env, timeout, cwd, signal, maxBuffer: 2 * 1024 * 1024, encoding: 'utf8', shell: false }, (error, stdout, stderr) => {
-    done({ code: error ? (typeof error.code === 'number' ? error.code : 1) : 0, stdout, stderr });
-  }));
+  return new Promise((done) => {
+    let child, stdout = '', stderr = '', error, closed = false, settled = false;
+    let deadlineTimer, killTimer, closeTimer, stopping = false;
+    const finish = (confirmed) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadlineTimer); clearTimeout(killTimer); clearTimeout(closeTimer);
+      signal?.removeEventListener('abort', cancel);
+      const result = { code: error || stopping ? (typeof error?.code === 'number' ? error.code : 1) : (child?.exitCode ?? 1), stdout, stderr, terminationConfirmed: confirmed };
+      if (!confirmed) {
+        result.childPid = child?.pid;
+        // Keep the persistent lock/stage, but allow the reporting installer to
+        // exit. A future installer checks the recorded child's liveness too.
+        child?.unref(); child?.stdout?.destroy(); child?.stderr?.destroy();
+      }
+      done(result);
+    };
+    const stop = (reason) => {
+      if (settled || stopping) return;
+      stopping = true; error ||= Object.assign(new Error(reason), { code: reason });
+      if (closed) { finish(true); return; }
+      child?.kill('SIGTERM');
+      killTimer = setTimeout(() => { if (!closed) child?.kill('SIGKILL'); }, 500);
+      closeTimer = setTimeout(() => finish(closed), 3_000);
+    };
+    const cancel = () => stop('ABORT_ERR');
+    if (signal?.aborted) { done({ code: 1, stdout, stderr, terminationConfirmed: true }); return; }
+    try {
+      // Lifecycle/timeout are owned here rather than execFile's early abort
+      // callback. No shell, and no lifecycle script descendants for MCP npm.
+      child = execFile(command, args, { env, cwd, maxBuffer: 2 * 1024 * 1024, encoding: 'utf8', shell: false }, (failure, out, err) => {
+        error ||= failure; stdout = out || ''; stderr = err || '';
+        if (failure && !closed && child?.exitCode === null && child?.signalCode === null) stop('COMMAND_ERROR');
+      });
+      child.once('close', () => { closed = true; finish(true); });
+      child.once('error', (failure) => { error ||= failure; stop('SPAWN_ERROR'); });
+      signal?.addEventListener('abort', cancel, { once: true });
+      if (signal?.aborted) cancel();
+      else deadlineTimer = setTimeout(() => stop('ETIMEDOUT'), Math.max(1, timeout));
+    } catch (failure) { error = failure; finish(true); }
+  });
+}
+
+function abortableSleep(ms, signal) {
+  return new Promise((done, reject) => {
+    if (signal?.aborted) { reject(new InstallError('INSTALL_INTERRUPTED', 'Installation interrupted.')); return; }
+    const abort = () => { clearTimeout(timer); reject(new InstallError('INSTALL_INTERRUPTED', 'Installation interrupted.')); };
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', abort); done(); }, ms);
+    signal?.addEventListener('abort', abort, { once: true });
+  });
 }
 
 const xml = (value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
@@ -129,7 +177,7 @@ const systemdPath = (value) => value.replaceAll('%', '%%');
 const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 
 export class Installer {
-  constructor({ home = homedir(), weaveHome = process.env.WEAVE_HOME || join(home, '.weave'), platform = process.platform, uid = process.getuid?.(), env = process.env, run = runCommand, resolveNative, confirm = async () => false, progress = () => {}, stage = () => {}, signal, nodePath = process.execPath, npmCli, sleep = (ms) => new Promise((done) => setTimeout(done, ms)), now = Date.now } = {}) {
+  constructor({ home = homedir(), weaveHome = process.env.WEAVE_HOME || join(home, '.weave'), platform = process.platform, uid = process.getuid?.(), env = process.env, run = runCommand, resolveNative, confirm = async () => false, progress = () => {}, stage = () => {}, signal, nodePath = process.execPath, npmCli, sleep = abortableSleep, now = Date.now } = {}) {
     this.home = resolve(home);
     this.weaveHome = resolve(weaveHome);
     if ([this.home, this.weaveHome].some((path) => /[\x00-\x1f\x7f]/.test(path))) fail('UNSAFE_PATH', 'Workspace and home paths cannot contain control characters.');
@@ -139,7 +187,21 @@ export class Installer {
     this.platform = platform;
     this.uid = uid;
     this.env = { ...env, WEAVE_HOME: this.weaveHome };
-    this.run = run;
+    this.run = async (...args) => {
+      const result = await run(...args);
+      if (result.terminationConfirmed === false) {
+        this.preserveLock = true;
+        if (Number.isInteger(result.childPid) && result.childPid > 0 && this.lockBytes) {
+          const owner = JSON.parse(this.lockBytes);
+          owner.children = [...new Set([...(owner.children || []), result.childPid])];
+          const next = Buffer.from(JSON.stringify(owner));
+          atomicWrite(this.lockPath, next, { previous: this.lockBytes });
+          this.lockBytes = next;
+        }
+        fail('CHILD_TERMINATION_UNCONFIRMED', 'Could not confirm installer subprocess termination. Its persistent lock, MCP staging tree and installed data were preserved. Do not remove the lock while its recorded process is alive.');
+      }
+      return result;
+    };
     this.resolveNative = resolveNative;
     this.confirm = confirm;
     this.progress = progress;
@@ -184,8 +246,10 @@ export class Installer {
       let owner;
       try { owner = JSON.parse(old); } catch { fail('INSTALL_LOCKED', 'An unrecognized installer lock exists. It will not be removed automatically.'); }
       if (owner.host !== hostname() || !Number.isInteger(owner.pid) || owner.pid < 1) fail('INSTALL_LOCKED', 'Another installer owns this workspace.');
-      let alive = true;
-      try { process.kill(owner.pid, 0); } catch (error) { if (error.code === 'ESRCH') alive = false; }
+      if (owner.children !== undefined && (!Array.isArray(owner.children) || owner.children.some((pid) => !Number.isInteger(pid) || pid < 1))) fail('INSTALL_LOCKED', 'Installer lock has an unrecognized subprocess owner.');
+      const alive = [owner.pid, ...(owner.children || [])].some((pid) => {
+        try { process.kill(pid, 0); return true; } catch (error) { return error.code !== 'ESRCH'; }
+      });
       if (alive) fail('INSTALL_LOCKED', 'Another installer is running in this workspace.');
       if (!unlinkIfUnchanged(this.lockPath, digest(old))) fail('INSTALL_LOCKED', 'Installer lock changed; rerun after the other installer finishes.');
     }
@@ -194,10 +258,11 @@ export class Installer {
   }
 
   unlock() {
-    if (this.lockBytes) unlinkIfUnchanged(this.lockPath, digest(this.lockBytes));
+    if (this.lockBytes && !this.preserveLock) unlinkIfUnchanged(this.lockPath, digest(this.lockBytes));
   }
 
   async native(args, label, timeout = 60_000) {
+    if (this.signal?.aborted) fail('INSTALL_INTERRUPTED', 'Installation interrupted.');
     const result = await this.run(this.binary, args, { env: this.env, timeout, signal: this.signal });
     if (result.code !== 0) fail('NATIVE_COMMAND_FAILED', `${label} failed (exit ${result.code}). Run ${this.binary} ${args.join(' ')} to inspect the runtime result.`);
     let data;
@@ -211,8 +276,9 @@ export class Installer {
     for (let attempt = 0; ; attempt++) {
       try { return await this.native(['doctor', '--json'], 'Weave doctor', 90_000); }
       catch (error) {
+        if (this.signal?.aborted) fail('INSTALL_INTERRUPTED', 'Installation interrupted.');
         if (!['NATIVE_COMMAND_FAILED', 'NATIVE_CHECK_FAILED'].includes(error.code) || attempt >= 9 || Date.now() >= deadline) throw error;
-        await this.sleep(1_000);
+        await this.sleep(1_000, this.signal);
       }
     }
   }
@@ -271,7 +337,7 @@ export class Installer {
           if (status.code !== 113 || !status.stderr.includes(missing)) fail('SERVICE_STOP_UNKNOWN', 'Could not verify launchd shutdown. Its binary and configuration were preserved.');
           break;
         }
-        await this.sleep(Math.min(100, deadline - checkedAt));
+        await this.sleep(Math.min(100, deadline - checkedAt), this.signal);
       }
     } else {
       await this.serviceCommand(['--user', 'disable', '--now', 'weave-node.service'], false);
@@ -361,8 +427,23 @@ export class Installer {
   }
 
   recognizedMcpReceipt(receipt) {
-    const specs = [this.mcpDefinition(), this.legacyMcpDefinition()];
-    return specs.some((spec) => receipt.format === 'json' ? JSON.stringify(receipt.spec) === JSON.stringify(spec) : receipt.block === this.mcpTomlBlock(spec));
+    if (receipt.format === 'json') {
+      const spec = receipt.spec;
+      if (JSON.stringify(spec) === JSON.stringify(this.legacyMcpDefinition())) return true;
+      return regular(spec) && Object.keys(spec).sort().join(',') === 'args,command,env'
+        && typeof spec.command === 'string' && isAbsolute(spec.command) && ['node', 'nodejs'].includes(basename(spec.command)) && !/[\x00-\x1f\x7f]/.test(spec.command)
+        && JSON.stringify(spec.args) === JSON.stringify([this.mcpRuntime.entry])
+        && JSON.stringify(spec.env) === JSON.stringify({ WEAVE_HOME: this.weaveHome, WEAVE_BINARY: this.binary });
+    }
+    if (receipt.format !== 'toml' || typeof receipt.block !== 'string') return false;
+    if (receipt.block === this.mcpTomlBlock(this.legacyMcpDefinition())) return true;
+    // Parse only the JSON-encoded command line in our exact generated block.
+    // Everything else must equal the regenerated fixed entry/environment.
+    const line = receipt.block.match(/^command = (.+)$/m);
+    if (!line) return false;
+    let command; try { command = JSON.parse(line[1]); } catch { return false; }
+    return typeof command === 'string' && isAbsolute(command) && ['node', 'nodejs'].includes(basename(command)) && !/[\x00-\x1f\x7f]/.test(command)
+      && receipt.block === this.mcpTomlBlock({ ...this.mcpDefinition(), command });
   }
 
   installMcp(client) {

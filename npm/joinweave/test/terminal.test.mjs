@@ -86,6 +86,9 @@ test('NO_COLOR disables color, narrow resize never wraps generated lines, and la
   stream.emit('resize');
   assert.ok(plain(stream.output).split('\n').every((line) => line.length <= 11));
   assert.equal(presenter.height, 1);
+  const upward = [...stream.output.matchAll(/\x1b\[(\d+)A/g)].map((match) => Number(match[1]));
+  assert.ok(upward.every((rows) => rows <= 2), 'tiny-terminal cleanup must stay inside its visible owned region');
+  assert.ok((stream.output.match(/\n/g) || []).length <= 3, 'cleanup must not scroll a tall blank frame');
   presenter.finish();
 });
 

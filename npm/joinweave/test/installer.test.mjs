@@ -470,3 +470,56 @@ test('an interrupted MCP atomic commit recovers its exact journaled stage and pr
   await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_RUNTIME' });
   assert.equal(fs.existsSync(stage), true);
 });
+
+
+test('intact owned MCP entries survive Node relocation and explicitly migrate or uninstall', async (t) => {
+  for (const client of ['cursor', 'codex']) {
+    for (const migrate of [false, true]) {
+      const f = fixture(t);
+      f.settings.nodePath = join(f.home, 'node-20/bin/node');
+      await f.installer().install(parseArgs(['--yes', '--no-service', `--mcp-client=${client}`]));
+      const config = f.installer().clientDefinition(client).path, original = fs.readFileSync(config);
+      f.settings.nodePath = join(f.home, 'node-24/bin/node');
+      await f.installer().install(headless());
+      assert.deepEqual(fs.readFileSync(config), original, 'Node upgrade alone is not client-edit consent');
+      if (migrate) {
+        await f.installer().install(parseArgs(['--yes', '--no-service', `--mcp-client=${client}`]));
+        assert.ok(fs.readFileSync(config, 'utf8').includes('node-24/bin/node'));
+        assert.equal(fs.readFileSync(config, 'utf8').includes('node-20/bin/node'), false);
+      }
+      assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
+      assert.equal(fs.readFileSync(config, 'utf8').includes('weave-mcp.js'), false);
+    }
+  }
+});
+
+test('unconfirmed npm termination retains the live-child lock and stage rather than cleaning underneath it', async (t) => {
+  const f = fixture(t, { response: (_, args) => args[1] === 'install'
+    ? { code: 1, stdout: '', stderr: '', terminationConfirmed: false, childPid: process.pid } : null });
+  await assert.rejects(f.installer().install(headless()), { code: 'CHILD_TERMINATION_UNCONFIRMED' });
+  const lockPath = join(f.home, '.weave/.joinweave-install.lock');
+  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assert.deepEqual(lock.children, [process.pid]);
+  const stages = fs.readdirSync(join(f.home, '.weave/tools'));
+  assert.equal(stages.length, 1);
+  assert.match(stages[0], /^\.mcp-.*\.staging$/);
+  assert.equal(fs.existsSync(join(f.home, '.weave/tools', stages[0], 'package.json')), true);
+  lock.pid = 2147483647; // Dead parent, but its recorded child is still live.
+  fs.writeFileSync(lockPath, JSON.stringify(lock));
+  await assert.rejects(f.installer().install(headless()), { code: 'INSTALL_LOCKED' });
+});
+
+test('readiness cancellation does not sleep or retry after an interrupted native child', async (t) => {
+  const controller = new AbortController(); let sleeps = 0;
+  const f = fixture(t, { response: (_, args) => {
+    if (args[0] !== 'doctor') return null;
+    controller.abort();
+    return { code: 1, stdout: '', stderr: '', terminationConfirmed: true };
+  } });
+  f.settings.signal = controller.signal;
+  f.settings.sleep = async () => { sleeps++; };
+  await assert.rejects(f.installer().install(headless()), { code: 'INSTALL_INTERRUPTED' });
+  assert.equal(sleeps, 0);
+  assert.equal(f.commands.filter((c) => c.args[0] === 'doctor').length, 1);
+  assert.equal(fs.existsSync(join(f.home, '.weave/.joinweave-install.lock')), false);
+});

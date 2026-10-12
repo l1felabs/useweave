@@ -101,3 +101,22 @@ test('published MCP installs atomically and serves ten real stdio tools from its
   owner.mcpRuntime.remove();
   assert.equal(fs.existsSync(owner.mcpRuntime.path), false);
 });
+
+
+test('abort and timeout kill a real SIGTERM-ignoring child before returning', { timeout: 10_000 }, async (t) => {
+  for (const cancel of ['abort', 'timeout']) {
+    const root = scratch(t), ready = join(root, 'ready.json');
+    const controller = new AbortController();
+    const program = `const fs = require('node:fs'); process.on('SIGTERM', () => {}); fs.writeFileSync(process.argv[1], JSON.stringify({pid:process.pid})); setInterval(() => {}, 1000);`;
+    const resultPromise = runCommand(process.execPath, ['-e', program, ready], { signal: controller.signal, timeout: cancel === 'timeout' ? 750 : 5000 });
+    const deadline = Date.now() + 3000;
+    while (!fs.existsSync(ready) && Date.now() < deadline) await new Promise((done) => setTimeout(done, 10));
+    assert.equal(fs.existsSync(ready), true, 'the child must install its SIGTERM handler before cancellation');
+    const { pid } = JSON.parse(fs.readFileSync(ready));
+    if (cancel === 'abort') controller.abort();
+    const result = await resultPromise;
+    assert.equal(result.terminationConfirmed, true);
+    assert.notEqual(result.code, 0);
+    assert.throws(() => process.kill(pid, 0), { code: 'ESRCH' }, 'child must be dead before installer cleanup can start');
+  }
+});

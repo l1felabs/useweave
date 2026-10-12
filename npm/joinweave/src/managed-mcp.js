@@ -121,7 +121,7 @@ export class ManagedMcp {
       owner.saveManifest();
     } finally {
       // Only this process's exclusive random staging directory; never a receipt path.
-      if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
+      if (!owner.preserveLock && fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
     }
   }
 

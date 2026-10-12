@@ -121,7 +121,11 @@ export class TerminalPresenter {
   clear() {
     if (!this.height) return;
     const columns = Math.max(1, Math.floor(this.stream.columns || 80));
-    const height = this.widths?.reduce((sum, width) => sum + Math.max(1, Math.ceil(width / columns)), 0) || this.height;
+    const priorRows = this.widths?.reduce((sum, width) => sum + Math.max(1, Math.ceil(width / columns)), 0) || this.height;
+    // Reflow may put old illustration lines into scrollback. Clear only the
+    // currently visible owned region; never scroll a tall blank frame through
+    // a newly tiny terminal.
+    const height = Math.min(priorRows, Math.max(1, Math.floor(this.stream.rows || 36) - 1));
     this.stream.write(`\x1b[${height}A`);
     for (let i = 0; i < height; i++) this.stream.write('\r\x1b[2K\n');
     this.stream.write(`\x1b[${height}A\r`);

@@ -69,8 +69,10 @@ used during installation and explicit `WEAVE_HOME` / `WEAVE_BINARY` values.
 They do not download MCP on startup. An existing owned npx-based configuration
 is migrated only when that client is explicitly selected again. Otherwise a
 headless rerun leaves client settings byte-for-byte unchanged. Keep that Node
-installation available; if you change its location, inspect existing client
-settings before reconnecting them.
+installation available for clients using it. If Node/nvm changes its location,
+a rerun with explicit `--mcp-client` consent migrates an intact owned entry to
+the current Node; a headless rerun leaves it unchanged. Uninstall still recognizes
+the exact owned old entry even if its Node executable is gone.
 
 The MCP installation uses npm with `--ignore-scripts`, a private exclusive
 staging directory, the pinned published package integrity, and an owned
@@ -118,3 +120,8 @@ including private identity keys. `~/Weave` is always preserved because it may
 contain unrelated files. Modified entries are preserved and reported; they
 block purge. An interruption preserves recoverable installed components; rerun
 the installer to continue.
+
+Cancellation waits for the installer child process to close, with bounded
+SIGTERM/SIGKILL escalation. If termination cannot be confirmed, its persistent
+lock and MCP stage are retained. A new installer refuses the lock while its
+recorded parent or child is alive; do not manually remove it under a live process.
