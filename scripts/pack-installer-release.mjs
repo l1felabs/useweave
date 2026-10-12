@@ -9,11 +9,11 @@ assert.equal(process.env.GITHUB_REPOSITORY,'l1felabs/useweave');
 const source=execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
 assert.equal(source,process.env.GITHUB_SHA);
 const pkgRoot=join(root,'npm/joinweave'),pkg=JSON.parse(readFileSync(join(pkgRoot,'package.json')));
-assert.equal(pkg.name,'joinweave');assert.equal(pkg.version,'0.1.2');
+assert.equal(pkg.name,'joinweave');assert.equal(pkg.version,'0.1.3');
 assert.deepEqual(pkg.dependencies,{'@useweave/cli':'0.1.0'});
 mkdirSync(out,{recursive:true});
 const packed=JSON.parse(execFileSync('npm',['pack',pkgRoot,'--ignore-scripts','--json','--pack-destination',out],{cwd:root,encoding:'utf8'}));
-assert.equal(packed.length,1);assert.equal(packed[0].filename,'joinweave-0.1.2.tgz');
+assert.equal(packed.length,1);assert.equal(packed[0].filename,'joinweave-0.1.3.tgz');
 const archive=join(out,packed[0].filename),bytes=readFileSync(archive);
 const names=execFileSync('tar',['-tzf',archive],{encoding:'utf8'}).trim().split('\n').sort();
 const expected=execFileSync('git',['-C',root,'ls-files','npm/joinweave'],{encoding:'utf8'}).trim().split('\n')
@@ -32,7 +32,7 @@ const files=expected.map(path=>{
 });
 const integrity='sha512-'+createHash('sha512').update(bytes).digest('base64');
 assert.equal(integrity,packed[0].integrity);
-const manifest={schema:1,name:'joinweave',version:'0.1.2',source_commit:source,
+const manifest={schema:1,name:'joinweave',version:'0.1.3',source_commit:source,
   archive:packed[0].filename,integrity,sha256:hash(bytes),bytes:bytes.length,files,
   native_package_version:'0.1.0',mcp_package_version:'0.1.0',application_build_runner:'Depot',npm_publication_performed:false};
 const manifestBytes=Buffer.from(JSON.stringify(manifest,null,2)+'\n');
