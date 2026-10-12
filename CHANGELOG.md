@@ -1,3 +1,7 @@
+## 2026-10-12 — Freeze seven 0.2.0 archives for final acceptance
+
+- Record all seven exact npm archives and four native qualification receipts in a SHA256/SHA512-bound release manifest. Add a standalone verifier and credential-free GitHub-hosted npm provenance recipe. These files prepare final managed-install acceptance and attestation; no workflow dispatch or publication occurs in this commit.
+
 ## 2026-10-12 — Bind all four qualified native distributions
 
 - Bind the workspace lock to the exact 0.2.0 macOS/Linux arm64/x64 archive SRIs and align all three JavaScript workspace dependency entries. Each native target passes 137 checks with three existing SDK/network timing cases ignored; macOS run 38320886352 completed on Depot without Developer ID signing.
