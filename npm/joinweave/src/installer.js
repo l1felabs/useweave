@@ -6,6 +6,8 @@ import { execFile } from 'node:child_process';
 
 export const VERSION = '0.1.1';
 const NATIVE_PACKAGE_VERSION = '0.1.0';
+// Published native0.1.0 treats this as its service-ownership protocol version.
+const RECEIPT_VERSION = '0.1.0';
 const PATH_BEGIN = '# >>> joinweave managed PATH >>>';
 const PATH_END = '# <<< joinweave managed PATH <<<' ;
 const MCP_BEGIN = '# >>> joinweave managed MCP >>>';
@@ -144,7 +146,7 @@ export class Installer {
     this.binary = join(this.weaveHome, 'bin', 'weave');
     this.manifestPath = join(this.weaveHome, '.joinweave-install.json');
     this.lockPath = join(this.weaveHome, '.joinweave-install.lock');
-    this.manifest = { schema: 1, installer: 'joinweave', version: VERSION, binary: null, service: null, path: null, mcp: {} };
+    this.manifest = { schema: 1, installer: 'joinweave', version: RECEIPT_VERSION, installerVersion: VERSION, binary: null, service: null, path: null, mcp: {} };
     this.warnings = [];
     this.manualMcp = [];
   }
@@ -163,7 +165,8 @@ export class Installer {
   }
 
   saveManifest() {
-    this.manifest.version = VERSION;
+    this.manifest.version = RECEIPT_VERSION;
+    this.manifest.installerVersion = VERSION;
     atomicWrite(this.manifestPath, Buffer.from(`${JSON.stringify(this.manifest, null, 2)}\n`), { previous: readFile(this.manifestPath) });
   }
 

@@ -174,7 +174,8 @@ test('launchd teardown waits for deregistration before removing managed files', 
   } });
   installed = await f.installer().install(parseArgs(['--yes']));
   const receipt = JSON.parse(fs.readFileSync(join(installed.workspace, '.joinweave-install.json'), 'utf8'));
-  assert.equal(receipt.version, '0.1.1');
+  assert.equal(receipt.version, '0.1.0');
+  assert.equal(receipt.installerVersion, '0.1.1');
   assert.equal(receipt.binary.version, '0.1.0');
   definition = receipt.service.path;
   const retained = join(installed.workspace, 'retained-strand');
