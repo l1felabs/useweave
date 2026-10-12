@@ -4,7 +4,8 @@ import { resolve, join, dirname, isAbsolute, parse } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 
-export const VERSION = '0.1.0';
+export const VERSION = '0.1.1';
+const NATIVE_PACKAGE_VERSION = '0.1.0';
 const PATH_BEGIN = '# >>> joinweave managed PATH >>>';
 const PATH_END = '# <<< joinweave managed PATH <<<' ;
 const MCP_BEGIN = '# >>> joinweave managed MCP >>>';
@@ -124,7 +125,7 @@ const systemdPath = (value) => value.replaceAll('%', '%%');
 const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 
 export class Installer {
-  constructor({ home = homedir(), weaveHome = process.env.WEAVE_HOME || join(home, '.weave'), platform = process.platform, uid = process.getuid?.(), env = process.env, run = runCommand, resolveNative, confirm = async () => false, progress = () => {}, sleep = (ms) => new Promise((done) => setTimeout(done, ms)) } = {}) {
+  constructor({ home = homedir(), weaveHome = process.env.WEAVE_HOME || join(home, '.weave'), platform = process.platform, uid = process.getuid?.(), env = process.env, run = runCommand, resolveNative, confirm = async () => false, progress = () => {}, sleep = (ms) => new Promise((done) => setTimeout(done, ms)), now = Date.now } = {}) {
     this.home = resolve(home);
     this.weaveHome = resolve(weaveHome);
     if ([this.home, this.weaveHome].some((path) => /[\x00-\x1f\x7f]/.test(path))) fail('UNSAFE_PATH', 'Workspace and home paths cannot contain control characters.');
@@ -139,6 +140,7 @@ export class Installer {
     this.confirm = confirm;
     this.progress = progress;
     this.sleep = sleep;
+    this.now = now;
     this.binary = join(this.weaveHome, 'bin', 'weave');
     this.manifestPath = join(this.weaveHome, '.joinweave-install.json');
     this.lockPath = join(this.weaveHome, '.joinweave-install.lock');
@@ -148,7 +150,7 @@ export class Installer {
   }
 
   validatePlatform() {
-    if (!['darwin', 'linux'].includes(this.platform)) fail('UNSUPPORTED_PLATFORM', 'joinweave 0.1.0 supports macOS and Linux. Windows service installation is not supported yet.');
+    if (!['darwin', 'linux'].includes(this.platform)) fail('UNSUPPORTED_PLATFORM', `joinweave ${VERSION} supports macOS and Linux. Windows service installation is not supported yet.`);
   }
 
   loadManifest() {
@@ -213,7 +215,7 @@ export class Installer {
     if (old && (!this.manifest.binary || digest(old) !== this.manifest.binary.sha256)) fail('UNMANAGED_BINARY', `An unrelated or modified executable exists at ${this.binary}. It will not be replaced.`);
     if (!old || digest(old) !== sha256) atomicWrite(this.binary, bytes, { previous: old, mode: 0o755 });
     fs.chmodSync(this.binary, 0o755);
-    this.manifest.binary = { sha256, version: VERSION };
+    this.manifest.binary = { sha256, version: NATIVE_PACKAGE_VERSION };
     this.saveManifest();
     this.progress('Installed Weave');
   }
@@ -246,10 +248,17 @@ export class Installer {
   async stopService() {
     if (this.platform === 'darwin') {
       await this.serviceCommand(['bootout', `gui/${this.uid}/${serviceName}`], false);
-      const status = await this.serviceCommand(['print', `gui/${this.uid}/${serviceName}`], false);
-      if (status.code === 0) fail('SERVICE_STOP_FAILED', 'The launchd node remains registered. Its binary and configuration were preserved.');
-      const missing = `Could not find service "${serviceName}" in domain for user gui: ${this.uid}`;
-      if (status.code !== 113 || !status.stderr.includes(missing)) fail('SERVICE_STOP_UNKNOWN', 'Could not verify launchd shutdown. Its binary and configuration were preserved.');
+      const deadline = this.now() + 10_000;
+      for (;;) {
+        const status = await this.serviceCommand(['print', `gui/${this.uid}/${serviceName}`], false);
+        if (status.code !== 0) {
+          const missing = `Could not find service "${serviceName}" in domain for user gui: ${this.uid}`;
+          if (status.code !== 113 || !status.stderr.includes(missing)) fail('SERVICE_STOP_UNKNOWN', 'Could not verify launchd shutdown. Its binary and configuration were preserved.');
+          break;
+        }
+        if (this.now() >= deadline) fail('SERVICE_STOP_FAILED', 'The launchd node remains registered. Its binary and configuration were preserved.');
+        await this.sleep(100);
+      }
     } else {
       await this.serviceCommand(['--user', 'disable', '--now', 'weave-node.service'], false);
       const status = await this.serviceCommand(['--user', 'is-active', '--quiet', 'weave-node.service'], false);

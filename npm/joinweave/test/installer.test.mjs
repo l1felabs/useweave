@@ -163,6 +163,52 @@ test('service stop failure preserves the executable and service receipt', async 
   assert.equal(fs.existsSync(installed.binary), true);
 });
 
+test('launchd teardown waits for deregistration before removing managed files', async (t) => {
+  let stopping = false, checks = 0, installed, definition;
+  const f = fixture(t, { platform: 'darwin', response: (command, args) => {
+    if (!stopping || command !== 'launchctl' || args[0] !== 'print') return null;
+    assert.equal(fs.existsSync(installed.binary), true);
+    assert.equal(fs.existsSync(definition), true);
+    if (++checks < 3) return { code: 0, stdout: 'state = running', stderr: '' };
+    return null;
+  } });
+  installed = await f.installer().install(parseArgs(['--yes']));
+  const receipt = JSON.parse(fs.readFileSync(join(installed.workspace, '.joinweave-install.json'), 'utf8'));
+  assert.equal(receipt.version, '0.1.1');
+  assert.equal(receipt.binary.version, '0.1.0');
+  definition = receipt.service.path;
+  const retained = join(installed.workspace, 'retained-strand');
+  fs.writeFileSync(retained, 'keep');
+  stopping = true;
+  const result = await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+  assert.equal(result.ok, true);
+  assert.equal(checks, 3);
+  assert.equal(fs.existsSync(installed.binary), false);
+  assert.equal(fs.existsSync(definition), false);
+  assert.equal(fs.readFileSync(retained, 'utf8'), 'keep');
+});
+
+test('persistent launchd registration reaches a bounded failure without deleting data', async (t) => {
+  let stopping = false, clock = 0;
+  const f = fixture(t, { platform: 'darwin', response: (command, args) => stopping && command === 'launchctl' && args[0] === 'print'
+    ? { code: 0, stdout: 'state = running', stderr: '' } : null });
+  f.settings.now = () => clock;
+  f.settings.sleep = async (ms) => { clock += ms; };
+  const installed = await f.installer().install(parseArgs(['--yes']));
+  const receiptPath = join(installed.workspace, '.joinweave-install.json');
+  const receipt = fs.readFileSync(receiptPath);
+  const definition = JSON.parse(receipt).service.path;
+  const retained = join(installed.workspace, 'retained-strand');
+  fs.writeFileSync(retained, 'keep');
+  stopping = true;
+  await assert.rejects(f.installer().uninstall(parseArgs(['uninstall', '--yes'])), { code: 'SERVICE_STOP_FAILED' });
+  assert.equal(clock, 10_000);
+  assert.equal(fs.existsSync(installed.binary), true);
+  assert.equal(fs.existsSync(definition), true);
+  assert.deepEqual(fs.readFileSync(receiptPath), receipt);
+  assert.equal(fs.readFileSync(retained, 'utf8'), 'keep');
+});
+
 test('unknown service shutdown preserves the binary and managed definition', async (t) => {
   for (const platform of ['linux', 'darwin']) {
     let unknown = false;
