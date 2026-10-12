@@ -71,6 +71,12 @@ test('stdio initializes, lists tools, calls the CLI and validates input without 
   assert.deepEqual(logs.result.structuredContent.args, ['--json', 'node', 'logs', '--lines', '25']);
   const seed = await request('tools/call', { name: 'weave_seed', arguments: { names: ['public-notes', 'release'] } });
   assert.deepEqual(seed.result.structuredContent.args, ['--json', 'strand', 'seed', 'public-notes', 'release']);
+  const maximumNames = Array.from({ length: 128 }, (_, index) => `fixture-${index}`);
+  const maximumSeed = await request('tools/call', { name: 'weave_seed', arguments: { names: maximumNames } });
+  assert.equal(maximumSeed.result?.isError, undefined, JSON.stringify(maximumSeed));
+  assert.deepEqual(maximumSeed.result.structuredContent.args, ['--json', 'strand', 'seed', ...maximumNames]);
+  const oversizedSeed = await request('tools/call', { name: 'weave_seed', arguments: { names: [...maximumNames, 'one-too-many'] } });
+  assert.ok(oversizedSeed.error || oversizedSeed.result?.isError, 'Over-limit seed requests must fail over the real MCP transport.');
   const invalid = await request('tools/call', { name: 'weave_find', arguments: { query: '../escape', writer_pubkey: 'not-a-key' } });
   assert.equal(invalid.result.isError, true);
   const unknown = await request('tools/call', { name: 'shell', arguments: {} });
