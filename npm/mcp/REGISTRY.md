@@ -1,16 +1,16 @@
 # Official MCP Registry submission
 
-Status: **prepared, not submitted**. `server.json` describes the source candidate
-under `io.github.l1felabs/weave`; this file is not evidence of a registry listing.
-Its version is aligned to the `0.2.0` package and MCP server identity. Publication
-of that exact archive remains a separate gate. The published
-`@useweave/mcp@0.1.0` exposes ten tools and lacks `mcpName`; it cannot be registered
-unchanged. This source contains 46 tools, including 28 model operations that
-require native runtime API 2. Published native CLI 0.1.0 does not provide those
-model operations.
+Registry preparation status: **prepared, not submitted**. `server.json` describes
+`@useweave/mcp@0.2.0` under `io.github.l1felabs/weave`; this file is not evidence
+of a registry listing. Its version matches the package and MCP server identity.
+The package exposes 46 tools, including 28 model operations requiring runtime
+API 2 from `@useweave/cli@0.2.0`. Check the native capability catalog rather than
+its version string: the API-2 executable still reports `weave 0.1.0`.
+Publication and verification of the exact archive are prerequisites to registry
+submission.
 
 The registry checks the **published npm package's** `mcpName` against the server
-name. Adding it only to this checkout does not make the existing npm release
+name. Metadata present only in a checkout does not make an npm archive
 eligible. See the official [npm package verification rules](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/package-types.mdx#npm-packages).
 
 ## Release prerequisites
@@ -26,8 +26,8 @@ eligible. See the official [npm package verification rules](https://github.com/m
    restart/deletion persistence. Ensure the default installed native runtime
    and fallback CLI dependency resolve to the qualified compatible release;
    qualify explicit `WEAVE_BINARY` overrides separately.
-3. Publish that reviewed archive to npm using the authorized Depot publishing
-   path. Preserve its source revision, integrity and provenance evidence. Inspect
+3. Publish that reviewed archive through npm CLI using authorized publisher
+   access. Preserve its source revision, integrity and provenance evidence. Inspect
    the exact public version and confirm its `mcpName`, executable and archive
    match the reviewed release before submitting registry metadata.
 4. Authenticate an authorized **Owner of the `l1felabs` GitHub organization**.

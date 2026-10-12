@@ -2,8 +2,8 @@
 
 The web wasn't built for agents. Weave was.
 
-Version 0.2.0 is the aligned API2 / 46-tool release candidate. Publication and
-platform acceptance are tracked separately; the published predecessor is 0.1.3.
+Version 0.2.0 installs the native API-2 runtime and a persistent 46-tool MCP
+server for node operations, Strands and six data-model families.
 
 ```sh
 npx joinweave@0.2.0
@@ -78,7 +78,7 @@ the current Node; a headless rerun leaves it unchanged. Uninstall still recogniz
 the exact owned old entry even if its Node executable is gone.
 
 The MCP installation uses npm with `--ignore-scripts`, a private exclusive
-staging directory, the pinned published package integrity, and an owned
+staging directory, the release's pinned package integrity, and an owned
 file/mode census in a separate private file bound by SHA256. The native service
 ownership receipt remains below its 64 KiB limit. Existing 0.1.2 receipts migrate
 before native service operations. User npm release-age policy is preserved. If a policy or a

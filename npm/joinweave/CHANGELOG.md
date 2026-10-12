@@ -1,3 +1,8 @@
+## 2026-10-12 — Version-specific 0.2.0 package documentation
+
+- Describe API-2 and the 46-tool/six-model workbench durably in packed CLI, MCP and installer guides; remove temporary candidate/publication and historical test-status wording. Preserve runtime limits, Desktop selected-file grant boundaries and consented migration/recovery behavior.
+- Correct the root README to published joinweave 0.1.3 with 0.1.0 dependencies and prepared 0.2.0 pending remaining qualification/publication. Keep registry submission explicitly pending with matching archive and namespace-owner requirements. Documentation only; changed archives require repacking and integrity rebinding before release.
+
 ## 0.2.0 — 2026-10-12 (release candidate)
 
 - Align the CLI wrapper, native package dependencies, 46-tool MCP metadata and installer at 0.2.0. Runtime API2 supplies persistent typed models; the native service receipt protocol and binary version stay 0.1.0, with the distribution version recorded separately as packageVersion. Explicitly ship both existing license files in CLI/MCP archives.
