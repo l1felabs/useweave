@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "passed": true,
+  "application_build_runner": "Depot",
+  "source_repository": "l1felabs/useweave",
+  "source_commit": "d84f70d50eb7a86b2baf5af0f8b02904ca81f686",
+  "workflow_repository": "l1felabs/weave-release-source",
+  "workflow_commit": "b65967308cc0d5bf83dfede70a7c1ac40105e8ed",
+  "workflow_ref": "l1felabs/weave-release-source/.github/workflows/installer-patch-qualification.yml@refs/heads/main",
+  "run_id": "38251019745",
+  "run_attempt": "1",
+  "runner_name": "depot-qzb6vvqw3m",
+  "tests_sha256": "82858568779251809d51f4945dca18da357d76a89433f7e8656f3ea08d920546",
+  "archive_sha256": "4ea17e45c339125b6728e294b7ba44c39c166c3948e669ef476ce81540b27309",
+  "manifest_sha256": "0e9654f2f9fae3bce6a19531f625dd6459aed25bbe21249bf5f6452000c4e7cd",
+  "completed": "2026-10-12T12:45:35.587Z",
+  "npm_publication_performed": false
+}

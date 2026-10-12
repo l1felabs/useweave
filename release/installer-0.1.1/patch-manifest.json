@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "name": "joinweave",
+  "version": "0.1.1",
+  "source_commit": "d84f70d50eb7a86b2baf5af0f8b02904ca81f686",
+  "archive": "joinweave-0.1.1.tgz",
+  "integrity": "sha512-2BEBfnJqMwXs49Jq7lE76l8XhUPMKWYX5cATV7vQKnl+mXauuiYys80z7LDariQvMd8ctYdZxKkn0yIe7VEWZA==",
+  "sha256": "4ea17e45c339125b6728e294b7ba44c39c166c3948e669ef476ce81540b27309",
+  "bytes": 16160,
+  "files": [
+    {
+      "path": "LICENSE-APACHE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "LICENSE-MIT",
+      "sha256": "c8cc3bd5882a0e56de9e1447e6cb79675259e4bdde8b5900e013db75ee953f6c"
+    },
+    {
+      "path": "README.md",
+      "sha256": "cc6ce3156774c533ea98b5220e9cce4706cec64522a0fcabefaa8f2bca8e6d71"
+    },
+    {
+      "path": "bin/joinweave.js",
+      "sha256": "7c17a55ff4c119f3d3539d410607f804900fe5d79634d812c9397f178c0400bc"
+    },
+    {
+      "path": "package.json",
+      "sha256": "6ffd8848421765d238cf7d38de50368b713ed7994de92b43bcb8ddc4033ac3e6"
+    },
+    {
+      "path": "src/installer.js",
+      "sha256": "f863269c4504afc9405643652b509f36c3cda5bbda69af7bd3080aba5be658c5"
+    }
+  ],
+  "native_package_version": "0.1.0",
+  "mcp_package_version": "0.1.0",
+  "application_build_runner": "Depot",
+  "npm_publication_performed": false
+}
