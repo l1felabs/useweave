@@ -7,7 +7,7 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { Installer, parseArgs } from '../src/installer.js';
-import { MCP_INTEGRITY } from '../src/managed-mcp.js';
+import { censusTree, MCP_INTEGRITY } from '../src/managed-mcp.js';
 
 function fixture(t, { platform = 'linux', response, homeName = 'home with spaces' } = {}) {
   const scratch = fs.realpathSync(fs.mkdtempSync(join(tmpdir(), 'joinweave-test-')));
@@ -184,7 +184,7 @@ test('launchd teardown waits for deregistration before removing managed files', 
   installed = await f.installer().install(parseArgs(['--yes']));
   const receipt = JSON.parse(fs.readFileSync(join(installed.workspace, '.joinweave-install.json'), 'utf8'));
   assert.equal(receipt.version, '0.1.0');
-  assert.equal(receipt.installerVersion, '0.1.2');
+  assert.equal(receipt.installerVersion, '0.1.3');
   assert.equal(receipt.binary.version, '0.1.0');
   definition = receipt.service.path;
   const retained = join(installed.workspace, 'retained-strand');
@@ -522,4 +522,108 @@ test('readiness cancellation does not sleep or retry after an interrupted native
   assert.equal(sleeps, 0);
   assert.equal(f.commands.filter((c) => c.args[0] === 'doctor').length, 1);
   assert.equal(fs.existsSync(join(f.home, '.weave/.joinweave-install.lock')), false);
+});
+
+
+function legacyLargeReceipt(f) {
+  const owner = f.installer(), runtime = owner.mcpRuntime.path;
+  // A real dependency tree has enough file ownership records to exceed the
+  // native parser limit. This deterministic fixture exercises that same shape.
+  const bulk = join(runtime, 'fixture-module');
+  fs.mkdirSync(bulk);
+  for (let i = 0; i < 650; i++) fs.writeFileSync(join(bulk, `module-${String(i).padStart(4, '0')}-${'x'.repeat(55)}.js`), `fixture ${i}`);
+  const receipt = JSON.parse(fs.readFileSync(owner.manifestPath, 'utf8'));
+  receipt.installerVersion = '0.1.2';
+  receipt.mcpRuntime.files = censusTree(runtime);
+  delete receipt.mcpRuntime.census;
+  fs.unlinkSync(owner.mcpRuntime.censusPath);
+  const bytes = JSON.stringify(receipt, null, 2) + '\n';
+  assert.ok(Buffer.byteLength(bytes) > 64 * 1024);
+  fs.writeFileSync(owner.manifestPath, bytes);
+  return { owner, runtime, bulk, bytes };
+}
+
+test('0.1.2 oversized MCP receipt migrates before native ownership validation and removes safely', async (t) => {
+  const f = fixture(t, { response: (_, args) => {
+    const path = join(f.home, '.weave/.joinweave-install.json');
+    if (['node', 'doctor'].includes(args[0]) && fs.existsSync(path) && fs.statSync(path).size > 64 * 1024) return { code: 1, stdout: '{"ok":false,"error":"service ownership receipt exceeds native64KiB limit"}', stderr: '' };
+    return null;
+  } });
+  await f.installer().install(headless());
+  const old = legacyLargeReceipt(f);
+  fs.writeFileSync(join(f.home, '.weave/retained-history'), 'keep');
+  assert.equal((await f.installer().install(headless())).ok, true);
+  const compact = JSON.parse(fs.readFileSync(old.owner.manifestPath, 'utf8'));
+  assert.equal(compact.mcpRuntime.files, undefined);
+  assert.ok(fs.statSync(old.owner.manifestPath).size < 64 * 1024);
+  assert.equal(compact.version, '0.1.0');
+  assert.equal(compact.binary.version, '0.1.0');
+  assert.equal(fs.statSync(old.owner.mcpRuntime.censusPath).mode & 0o777, 0o600);
+  assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
+  assert.equal(fs.existsSync(old.runtime), false);
+  assert.equal(fs.existsSync(old.owner.mcpRuntime.censusPath), false);
+  assert.equal(fs.readFileSync(join(f.home, '.weave/retained-history'), 'utf8'), 'keep');
+});
+
+test('legacy oversized uninstall retains modified MCP files and their hash-bound census', async (t) => {
+  const f = fixture(t); await f.installer().install(headless());
+  const old = legacyLargeReceipt(f), changed = join(old.runtime, 'node_modules/@useweave/mcp/bin/weave-mcp.js');
+  fs.appendFileSync(changed, '// retain my edit');
+  const result = await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+  assert.equal(result.ok, false);
+  assert.ok(result.warnings.some((value) => value.includes('MCP runtime')));
+  assert.ok(fs.readFileSync(changed, 'utf8').includes('retain my edit'));
+  assert.ok(fs.statSync(old.owner.manifestPath).size < 64 * 1024);
+  assert.equal(fs.existsSync(old.owner.mcpRuntime.censusPath), true);
+});
+
+test('census tampering or a foreign migration destination is refused without overwrite', async (t) => {
+  const f = fixture(t); await f.installer().install(headless());
+  const old = legacyLargeReceipt(f), before = fs.readFileSync(old.owner.manifestPath);
+  fs.writeFileSync(old.owner.mcpRuntime.censusPath, 'foreign', { mode: 0o600 });
+  await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_CENSUS' });
+  assert.deepEqual(fs.readFileSync(old.owner.manifestPath), before);
+  assert.equal(fs.readFileSync(old.owner.mcpRuntime.censusPath, 'utf8'), 'foreign');
+  fs.unlinkSync(old.owner.mcpRuntime.censusPath);
+  await f.installer().install(headless());
+  fs.appendFileSync(old.owner.mcpRuntime.censusPath, ' ');
+  await assert.rejects(f.installer().install(headless()), { code: 'MODIFIED_MCP_CENSUS' });
+  assert.equal(fs.existsSync(old.runtime), true);
+});
+
+
+test('durable MCP removal recovers the exact crash after runtime and census unlink', async (t) => {
+  for (const action of ['uninstall', 'install']) {
+    const f = fixture(t); await f.installer().install(headless());
+    const owner = f.installer(); owner.loadManifest();
+    const save = owner.saveManifest.bind(owner);
+    owner.saveManifest = () => {
+      if (!owner.manifest.mcpRuntime) throw new Error('simulated crash after both unlinks, before final receipt write');
+      save();
+    };
+    assert.throws(() => owner.mcpRuntime.remove(), /simulated crash/);
+    assert.equal(fs.existsSync(owner.mcpRuntime.path), false);
+    assert.equal(fs.existsSync(owner.mcpRuntime.censusPath), false);
+    const journal = JSON.parse(fs.readFileSync(owner.manifestPath));
+    assert.equal(journal.mcpRuntime.removing, true);
+    const result = action === 'install' ? await f.installer().install(headless()) : await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+    assert.equal(result.ok, true);
+    if (action === 'install') {
+      assert.equal(fs.existsSync(owner.mcpRuntime.entry), true);
+      assert.equal(JSON.parse(fs.readFileSync(owner.manifestPath)).mcpRuntime.removing, undefined);
+    } else assert.equal(fs.existsSync(owner.manifestPath), false);
+  }
+});
+
+test('removal journal never substitutes for missing or modified census beside a surviving runtime', async (t) => {
+  for (const state of ['missing', 'modified']) {
+    const f = fixture(t); await f.installer().install(headless());
+    const owner = f.installer(); owner.loadManifest();
+    owner.manifest.mcpRuntime.removing = true; owner.saveManifest();
+    if (state === 'missing') fs.unlinkSync(owner.mcpRuntime.censusPath);
+    else fs.appendFileSync(owner.mcpRuntime.censusPath, ' ');
+    await assert.rejects(f.installer().install(headless()), { code: state === 'missing' ? 'MISSING_MCP_CENSUS' : 'MODIFIED_MCP_CENSUS' });
+    assert.equal(fs.existsSync(owner.mcpRuntime.entry), true);
+    assert.equal(JSON.parse(fs.readFileSync(owner.manifestPath)).mcpRuntime.removing, true);
+  }
 });

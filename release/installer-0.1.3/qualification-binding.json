@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "source_commit": "cf3181e7f79c609e9a023e20ca69ebf86d15cd10",
+  "workflow_commit": "11a813550bae1e2767e1977f1018fc7c49411067",
+  "run_id": "38281000021",
+  "qualification_sha256": "38b186e9c5f7c896c82cfe5ac3814dc284dc7a632ac54193324228859a5e7a57",
+  "manifest_sha256": "59fbbe39ecbeb14b987d525f0a78ddfcf283223a7ad150feb74135dd1305b9d7",
+  "candidate_acceptance_sha256": "eef11350e0c911bd4b2267283745e1c9f4a5c260f8a772ed3348fe69c4a65796"
+}

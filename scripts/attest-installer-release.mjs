@@ -21,9 +21,9 @@ assert.match(binding.run_id,/^[0-9]+$/);
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const manifestBytes=readFileSync(join(root,'release-manifest.json'));
 const manifest=JSON.parse(manifestBytes);
-assert.equal(manifest.name,'joinweave');assert.equal(manifest.version,'0.1.2');
+assert.equal(manifest.name,'joinweave');assert.equal(manifest.version,'0.1.3');
 assert.equal(manifest.source_commit,binding.source_commit);
-assert.equal(manifest.archive,'joinweave-0.1.2.tgz');assert.equal(manifest.application_build_runner,'Depot');
+assert.equal(manifest.archive,'joinweave-0.1.3.tgz');assert.equal(manifest.application_build_runner,'Depot');
 const archive=join(root,manifest.archive),bytes=readFileSync(archive);
 assert.equal(hash(bytes),manifest.sha256);
 assert.equal('sha512-'+createHash('sha512').update(bytes).digest('base64'),manifest.integrity);
@@ -33,12 +33,22 @@ assert.equal(qualification.source_repository,'l1felabs/useweave');assert.equal(q
 assert.equal(qualification.workflow_repository,'l1felabs/weave-release-source');
 assert.equal(qualification.workflow_commit,binding.workflow_commit);
 assert.equal(qualification.run_id,binding.run_id);
-assert.equal(qualification.workflow_ref,'l1felabs/weave-release-source/.github/workflows/installer-012-qualification.yml@refs/heads/codex/joinweave-012-validation');
+assert.equal(qualification.workflow_ref,'l1felabs/weave-release-source/.github/workflows/installer-013-qualification.yml@refs/heads/codex/joinweave-013-validation');
 assert.equal(hash(readFileSync(join(root,'qualification.json'))),binding.qualification_sha256);
 assert.equal(hash(manifestBytes),binding.manifest_sha256);
 assert.equal(qualification.archive_sha256,manifest.sha256);
 assert.equal(qualification.manifest_sha256,hash(manifestBytes));
 assert.equal(qualification.tests_sha256,hash(readFileSync(join(root,'tests.log'))));
+const acceptanceBytes=readFileSync(join(root,'candidate-acceptance.json'));
+const acceptance=JSON.parse(acceptanceBytes);
+assert.equal(acceptance.complete,true);assert.equal(acceptance.candidate_version,'0.1.3');
+assert.equal(acceptance.qualified_source_commit,binding.source_commit);
+assert.equal(acceptance.installer_archive_sha256,manifest.sha256);
+assert.equal(acceptance.mcp.complete,true);
+assert(Number.isSafeInteger(acceptance.native_ownership_receipt_bytes));
+assert(acceptance.native_ownership_receipt_bytes>0&&acceptance.native_ownership_receipt_bytes<=65536);
+assert.equal(hash(acceptanceBytes),binding.candidate_acceptance_sha256);
+assert.equal(qualification.candidate_acceptance_sha256,binding.candidate_acceptance_sha256);
 const expected=execFileSync('git',['-C',sourceRoot,'ls-files','npm/joinweave'],{encoding:'utf8'}).trim().split('\n')
   .map(p=>p.replace(/^npm\/joinweave\//,''))
   .filter(p=>/^(LICENSE-APACHE|LICENSE-MIT|README\.md|package\.json|bin\/joinweave\.js|src\/[a-z-]+\.js)$/.test(p)).sort();
@@ -54,7 +64,7 @@ const globalRoot=execFileSync('npm',['root','-g'],{encoding:'utf8'}).trim();
 const require=createRequire(join(globalRoot,'npm/package.json'));
 const npa=require(join(globalRoot,'npm/node_modules/npm-package-arg'));
 const {generateProvenance,verifyProvenance}=require(join(globalRoot,'npm/node_modules/libnpmpublish/lib/provenance.js'));
-const subject={name:npa.toPurl(npa.resolve('joinweave','0.1.2')),digest:{sha512:createHash('sha512').update(bytes).digest('hex')}};
+const subject={name:npa.toPurl(npa.resolve('joinweave','0.1.3')),digest:{sha512:createHash('sha512').update(bytes).digest('hex')}};
 const bundle=await generateProvenance([subject],{});
 const statement=JSON.parse(Buffer.from(bundle.dsseEnvelope.payload,'base64').toString('utf8'));
 assert.deepEqual(statement.subject,[subject]);
@@ -62,12 +72,12 @@ assert.equal(statement.predicate.buildDefinition.resolvedDependencies[0].digest.
 assert.equal(statement.predicate.buildDefinition.externalParameters.workflow.path,'.github/workflows/installer-attestation.yml');
 assert.equal(statement.predicate.runDetails.builder.id,'https://github.com/actions/runner/github-hosted');
 mkdirSync(out,{recursive:true});
-for(const name of [manifest.archive,'release-manifest.json','qualification.json'])copyFileSync(join(root,name),join(out,name));
-const path=join(out,'joinweave-0.1.2.provenance.json');
+for(const name of [manifest.archive,'release-manifest.json','qualification.json','candidate-acceptance.json'])copyFileSync(join(root,name),join(out,name));
+const path=join(out,'joinweave-0.1.3.provenance.json');
 writeFileSync(path,JSON.stringify(bundle)+'\n',{flag:'wx'});
 await verifyProvenance(subject,path);
 writeFileSync(join(out,'provenance-receipt.json'),JSON.stringify({schema:1,source_commit:env.GITHUB_SHA,
   qualified_source_commit:binding.source_commit,depot_run_id:qualification.run_id,run_id:env.GITHUB_RUN_ID,
   manifest_sha256:hash(manifestBytes),bundle_sha256:hash(readFileSync(path)),
   signature_verified:true,npm_publication_performed:false},null,2)+'\n',{flag:'wx'});
-console.log(JSON.stringify({ok:true,name:'joinweave',version:'0.1.2',npm_publication_performed:false}));
+console.log(JSON.stringify({ok:true,name:'joinweave',version:'0.1.3',npm_publication_performed:false}));

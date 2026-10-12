@@ -57,87 +57,214 @@ export function verifyMcpTree(root) {
   return files;
 }
 
+const MAX_CENSUS_BYTES = 8 * 1024 * 1024;
+function censusBytes(files) {
+  if (!Array.isArray(files) || files.length > 20_000 || files.some((file) => {
+    if (!file || typeof file.path !== 'string' || isAbsolute(file.path) || file.path.split('/').some((part) => part === '..' || part === '.') || /[\x00-\x1f\x7f]/.test(file.path) || !Number.isInteger(file.mode) || file.mode < 0 || file.mode > 0o777) return true;
+    if (file.type === 'directory') return Object.keys(file).sort().join(',') !== 'mode,path,type';
+    return file.type !== 'file' || Object.keys(file).sort().join(',') !== 'mode,path,sha256,size,type' || !Number.isSafeInteger(file.size) || file.size < 0 || !/^[a-f0-9]{64}$/.test(file.sha256 || '');
+  })) fail('INVALID_MANIFEST', 'MCP file census is not recognized.');
+  const bytes = Buffer.from(`${JSON.stringify(files, null, 2)}\n`);
+  if (bytes.length > MAX_CENSUS_BYTES) fail('MCP_TREE_LIMIT', 'MCP file census exceeds its metadata limit.');
+  return bytes;
+}
+
+function privateCensus(path) {
+  assertSafePath(path);
+  const fd = fs.openSync(path, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile() || stat.nlink !== 1 || (stat.mode & 0o777) !== 0o600 || stat.uid !== process.getuid() || stat.size > MAX_CENSUS_BYTES) fail('UNSAFE_MCP_CENSUS', 'MCP census has an unsafe type, owner, mode, link count or size. It was preserved.');
+    const bytes = fs.readFileSync(fd);
+    if (bytes.length > MAX_CENSUS_BYTES) fail('MCP_TREE_LIMIT', 'MCP census grew beyond its metadata limit.');
+    return bytes;
+  } finally { fs.closeSync(fd); }
+}
+
+function writeCensus(path, bytes) {
+  assertSafePath(path);
+  const fd = fs.openSync(path, 'wx', 0o600);
+  try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+}
+
 export class ManagedMcp {
   constructor(installer) {
     this.owner = installer;
     this.path = join(installer.weaveHome, 'tools', `mcp-${MCP_VERSION}`);
     this.entry = join(this.path, ENTRY);
+    this.censusPath = join(installer.weaveHome, 'tools', `mcp-${MCP_VERSION}.census.json`);
+  }
+
+  commonReceipt(receipt) {
+    return receipt && receipt.version === MCP_VERSION && receipt.path === this.path && receipt.entry === this.entry;
   }
 
   validReceipt(receipt) {
-    return receipt && receipt.version === MCP_VERSION && receipt.path === this.path && receipt.entry === this.entry && Array.isArray(receipt.files);
+    return this.commonReceipt(receipt) && receipt.census?.path === this.censusPath && /^[a-f0-9]{64}$/.test(receipt.census.sha256 || '') && receipt.files === undefined;
+  }
+
+  stagingPath(path, census = false) {
+    return typeof path === 'string' && dirname(path) === dirname(this.path) && (census ? /^\.mcp-[a-f0-9-]{36}\.census\.staging$/ : /^\.mcp-[a-f0-9-]{36}\.staging$/).test(path.split('/').pop());
+  }
+
+  files(receipt) {
+    if (!this.validReceipt(receipt)) fail('INVALID_MANIFEST', 'MCP runtime receipt is not recognized.');
+    let path = this.censusPath;
+    assertSafePath(path);
+    if (!fs.existsSync(path) && receipt.census.staging) {
+      if (!this.stagingPath(receipt.census.staging, true)) fail('INVALID_MANIFEST', 'MCP census stage is not recognized.');
+      path = receipt.census.staging;
+    }
+    if (!fs.existsSync(path)) fail('MISSING_MCP_CENSUS', 'MCP ownership census is missing. A surviving runtime was preserved.');
+    const bytes = privateCensus(path);
+    if (sha(bytes) !== receipt.census.sha256) fail('MODIFIED_MCP_CENSUS', 'MCP census was modified. Its runtime and metadata were preserved.');
+    let files; try { files = JSON.parse(bytes); } catch { fail('INVALID_MANIFEST', 'MCP census is invalid JSON.'); }
+    if (!censusBytes(files).equals(bytes)) fail('INVALID_MANIFEST', 'MCP census does not match its canonical file records.');
+    return files;
+  }
+
+  /** Move 0.1.2's large embedded census before any native service command. */
+  migrateLegacyReceipt() {
+    const owner = this.owner, receipt = owner.manifest.mcpRuntime;
+    if (!receipt || receipt.files === undefined) return;
+    if (!this.commonReceipt(receipt) || receipt.census !== undefined) fail('INVALID_MANIFEST', 'Legacy MCP runtime receipt is not recognized.');
+    const bytes = censusBytes(receipt.files);
+    assertSafePath(dirname(this.censusPath));
+    fs.mkdirSync(dirname(this.censusPath), { recursive: true, mode: 0o700 });
+    assertSafePath(this.censusPath);
+    if (fs.existsSync(this.censusPath)) {
+      if (!privateCensus(this.censusPath).equals(bytes)) fail('UNMANAGED_MCP_CENSUS', 'An unrelated or modified MCP census exists. It was not replaced.');
+    } else {
+      // A crash before compacting the main receipt is recovered by exact-byte
+      // adoption above. A modified tree still migrates its original ownership
+      // records, allowing safe service teardown while preserving modified files.
+      const temporary = join(dirname(this.path), `.mcp-${randomUUID()}.census.staging`);
+      try {
+        writeCensus(temporary, bytes);
+        assertSafePath(this.censusPath);
+        if (fs.existsSync(this.censusPath)) fail('CONCURRENT_EDIT', 'MCP census destination appeared during migration.');
+        fs.renameSync(temporary, this.censusPath);
+      } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+    }
+    receipt.census = { path: this.censusPath, sha256: sha(bytes) };
+    delete receipt.files;
+    owner.saveManifest();
   }
 
   unchanged(receipt) {
-    return this.validReceipt(receipt) && JSON.stringify(censusTree(this.path)) === JSON.stringify(receipt.files);
+    return this.validReceipt(receipt) && JSON.stringify(censusTree(this.path)) === JSON.stringify(this.files(receipt));
+  }
+
+  commitCensus(receipt) {
+    const stage = receipt.census.staging;
+    if (!stage) return;
+    if (!this.stagingPath(stage, true)) fail('INVALID_MANIFEST', 'MCP census stage is not recognized.');
+    assertSafePath(stage); assertSafePath(this.censusPath);
+    if (fs.existsSync(stage)) {
+      if (fs.existsSync(this.censusPath)) fail('CONCURRENT_EDIT', 'Both staged and installed MCP censuses exist. They were preserved.');
+      if (sha(privateCensus(stage)) !== receipt.census.sha256) fail('MODIFIED_MCP_CENSUS', 'MCP staged census was modified.');
+      fs.renameSync(stage, this.censusPath);
+    }
+    // Reading validates the final private file, its hash and canonical records.
+    this.files(receipt);
+    delete receipt.census.staging;
   }
 
   async install() {
     const owner = this.owner;
+    this.resumeRemoval();
     let receipt = owner.manifest.mcpRuntime;
+    if (receipt?.removing) fail('UNMANAGED_MCP_RUNTIME', 'The interrupted MCP removal preserved modified files. Resolve them before reinstalling.');
     assertSafePath(this.path);
     if (receipt?.staging) {
-      if (!this.validReceipt(receipt) || dirname(receipt.staging) !== dirname(this.path) || !/^\.mcp-[a-f0-9-]{36}\.staging$/.test(receipt.staging.split('/').pop())) fail('INVALID_MANIFEST', 'MCP staging receipt is not recognized.');
+      if (!this.validReceipt(receipt) || !this.stagingPath(receipt.staging)) fail('INVALID_MANIFEST', 'MCP staging receipt is not recognized.');
       assertSafePath(receipt.staging);
+      const expected = this.files(receipt);
       if (fs.existsSync(receipt.staging)) {
         if (fs.existsSync(this.path)) fail('CONCURRENT_EDIT', 'Both staged and installed MCP runtimes exist. They were preserved.');
-        if (JSON.stringify(verifyMcpTree(receipt.staging)) !== JSON.stringify(receipt.files)) fail('UNMANAGED_MCP_RUNTIME', 'The recoverable MCP stage was modified. It was preserved.');
+        if (JSON.stringify(verifyMcpTree(receipt.staging)) !== JSON.stringify(expected)) fail('UNMANAGED_MCP_RUNTIME', 'The recoverable MCP stage was modified. It was preserved.');
+        this.commitCensus(receipt);
         fs.renameSync(receipt.staging, this.path);
       } else if (!fs.existsSync(this.path)) {
+        // The journal still proves ownership of the unchanged separate census.
+        for (const path of [receipt.census.staging, this.censusPath].filter(Boolean)) {
+          if (fs.existsSync(path)) { if (sha(privateCensus(path)) !== receipt.census.sha256) fail('MODIFIED_MCP_CENSUS', 'MCP census was modified.'); fs.unlinkSync(path); }
+        }
         delete owner.manifest.mcpRuntime;
-        owner.saveManifest();
-        receipt = undefined;
+        owner.saveManifest(); receipt = undefined;
       }
       if (receipt) {
         if (!this.unchanged(receipt)) fail('UNMANAGED_MCP_RUNTIME', 'The recoverable MCP runtime was modified. It was preserved.');
-        delete receipt.staging;
-        owner.saveManifest();
+        this.commitCensus(receipt);
+        delete receipt.staging; owner.saveManifest();
       }
     }
     if (fs.existsSync(this.path)) {
       if (!this.unchanged(receipt)) fail('UNMANAGED_MCP_RUNTIME', `An unrelated or modified MCP runtime exists at ${this.path}. It was preserved.`);
-      verifyMcpTree(this.path);
-      return;
+      verifyMcpTree(this.path); return;
     }
     if (receipt) fail('MISSING_MCP_RUNTIME', 'The recorded MCP runtime is missing. Uninstall the owned receipt before reinstalling.');
-    assertSafePath(dirname(this.path));
-    fs.mkdirSync(dirname(this.path), { recursive: true, mode: 0o700 });
-    const stage = join(dirname(this.path), `.mcp-${randomUUID()}.staging`);
+    assertSafePath(this.censusPath);
+    if (fs.existsSync(this.censusPath)) fail('UNMANAGED_MCP_CENSUS', 'An unowned MCP census exists. It was preserved.');
+    assertSafePath(dirname(this.path)); fs.mkdirSync(dirname(this.path), { recursive: true, mode: 0o700 });
+    const id = randomUUID(), stage = join(dirname(this.path), `.mcp-${id}.staging`), censusStage = join(dirname(this.path), `.mcp-${id}.census.staging`);
     fs.mkdirSync(stage, { mode: 0o700 });
     try {
       fs.writeFileSync(join(stage, 'package.json'), JSON.stringify({ name: 'joinweave-managed-mcp', version: MCP_VERSION, private: true, dependencies: { '@useweave/mcp': MCP_VERSION } }), { flag: 'wx', mode: 0o600 });
       const npmCli = owner.npmCli || resolveNpmCli(owner.env, owner.nodePath);
       const result = await owner.run(owner.nodePath, [npmCli, 'install', '--prefix', stage, '--ignore-scripts', '--bin-links=false', '--omit=optional', '--no-audit', '--no-fund', '--save-exact', '--registry=https://registry.npmjs.org', '--loglevel=error'], { env: owner.env, cwd: stage, timeout: 180_000, signal: owner.signal });
       if (result.code !== 0) fail('MCP_INSTALL_FAILED', `MCP installation failed (exit ${result.code}). Your runtime and identity remain available. Check npm connectivity and its existing release-age policy, then rerun.`);
-      const files = verifyMcpTree(stage);
+      const bytes = censusBytes(verifyMcpTree(stage));
+      writeCensus(censusStage, bytes);
       assertSafePath(this.path);
       if (fs.existsSync(this.path)) fail('CONCURRENT_EDIT', 'MCP destination appeared during installation. It was not replaced.');
-      // Journal the exact verified stage before rename, so an interruption at
-      // either side of the atomic commit remains recoverable without guessing.
-      owner.manifest.mcpRuntime = { version: MCP_VERSION, path: this.path, entry: this.entry, files, staging: stage };
+      owner.manifest.mcpRuntime = { version: MCP_VERSION, path: this.path, entry: this.entry, census: { path: this.censusPath, sha256: sha(bytes), staging: censusStage }, staging: stage };
       owner.saveManifest();
+      this.commitCensus(owner.manifest.mcpRuntime);
       fs.renameSync(stage, this.path);
-      delete owner.manifest.mcpRuntime.staging;
-      owner.saveManifest();
+      delete owner.manifest.mcpRuntime.staging; owner.saveManifest();
     } finally {
-      // Only this process's exclusive random staging directory; never a receipt path.
-      if (!owner.preserveLock && fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
+      if (!owner.preserveLock) {
+        if (fs.existsSync(stage)) fs.rmSync(stage, { recursive: true });
+        if (fs.existsSync(censusStage)) fs.unlinkSync(censusStage);
+      }
     }
+  }
+
+  /** Persisted intent is required to recover an expected both-absent removal. */
+  resumeRemoval() {
+    const owner = this.owner, receipt = owner.manifest.mcpRuntime;
+    if (!receipt?.removing) return;
+    if (receipt.removing !== true || !this.validReceipt(receipt) || receipt.staging || receipt.census.staging) fail('INVALID_MANIFEST', 'MCP removal journal is not recognized.');
+    assertSafePath(this.path); assertSafePath(this.censusPath);
+    if (fs.existsSync(this.path)) {
+      // The journal alone never authorizes a surviving tree: its private census
+      // must still exist and match, and every file/mode must remain unchanged.
+      this.files(receipt);
+      if (owner.warnings.length || !this.unchanged(receipt)) { owner.warnings.push('Preserved modified or still-referenced MCP runtime.'); return; }
+      if (!this.unchanged(receipt)) fail('CONCURRENT_EDIT', 'MCP runtime changed while resuming removal.');
+      fs.rmSync(this.path, { recursive: true });
+    }
+    if (fs.existsSync(this.censusPath)) {
+      this.files(receipt);
+      fs.unlinkSync(this.censusPath);
+    }
+    // A crash after either unlink leaves the durable marker. Both-absent is
+    // safe only on this explicitly journaled path; no foreign file is adopted.
+    delete owner.manifest.mcpRuntime; owner.saveManifest();
   }
 
   remove() {
     const owner = this.owner, receipt = owner.manifest.mcpRuntime;
     if (!receipt) return;
+    if (receipt.removing) { this.resumeRemoval(); return; }
     if (!this.validReceipt(receipt)) fail('INVALID_MANIFEST', 'MCP runtime receipt is not recognized.');
     if (receipt.staging) { owner.warnings.push('Preserved a recoverable MCP staging receipt. Rerun installation before uninstalling it.'); return; }
+    this.files(receipt);
     assertSafePath(this.path);
-    if (fs.existsSync(this.path)) {
-      if (owner.warnings.length || !this.unchanged(receipt)) { owner.warnings.push('Preserved modified or still-referenced MCP runtime.'); return; }
-      // Recheck the entire owned tree immediately before removing it.
-      if (!this.unchanged(receipt)) fail('CONCURRENT_EDIT', 'MCP runtime changed while preparing removal.');
-      fs.rmSync(this.path, { recursive: true });
-    }
-    delete owner.manifest.mcpRuntime;
+    if (fs.existsSync(this.path) && (owner.warnings.length || !this.unchanged(receipt))) { owner.warnings.push('Preserved modified or still-referenced MCP runtime.'); return; }
+    receipt.removing = true;
     owner.saveManifest();
+    this.resumeRemoval();
   }
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Installer, runCommand } from '../src/installer.js';
 import { censusTree, MCP_INTEGRITY, resolveNpmCli, verifyMcpTree } from '../src/managed-mcp.js';
@@ -68,6 +69,15 @@ test('published MCP installs atomically and serves ten real stdio tools from its
   await owner.mcpRuntime.install();
   assert.deepEqual(fs.readFileSync(owner.manifestPath), before);
   assert.ok(verifyMcpTree(owner.mcpRuntime.path).length > 10);
+  const compact = JSON.parse(fs.readFileSync(owner.manifestPath));
+  const census = fs.readFileSync(owner.mcpRuntime.censusPath);
+  assert.equal(compact.mcpRuntime.files, undefined);
+  assert.equal(compact.mcpRuntime.census.sha256, createHash('sha256').update(census).digest('hex'));
+  assert.ok(fs.statSync(owner.manifestPath).size < 64 * 1024, 'real MCP installation must fit the unchanged native service receipt parser');
+  const legacy = { ...compact, mcpRuntime: { ...compact.mcpRuntime, files: JSON.parse(census) } };
+  delete legacy.mcpRuntime.census;
+  assert.ok(Buffer.byteLength(JSON.stringify(legacy, null, 2)) > 64 * 1024, 'real published tree must exercise the oversized0.1.2 receipt regression');
+  console.log(JSON.stringify({ realMcpFiles: JSON.parse(census).length, compactReceiptBytes: fs.statSync(owner.manifestPath).size, legacyReceiptBytes: Buffer.byteLength(JSON.stringify(legacy, null, 2)) }));
   const child = spawn(process.execPath, [owner.mcpRuntime.entry], { env: owner.env, stdio: ['pipe', 'pipe', 'pipe'] });
   t.after(() => { child.kill(); });
   let buffered = '', stderr = '';
@@ -100,6 +110,7 @@ test('published MCP installs atomically and serves ten real stdio tools from its
   await new Promise((done) => { if (child.exitCode !== null) done(); else child.once('exit', done); });
   owner.mcpRuntime.remove();
   assert.equal(fs.existsSync(owner.mcpRuntime.path), false);
+  assert.equal(fs.existsSync(owner.mcpRuntime.censusPath), false);
 });
 
 
