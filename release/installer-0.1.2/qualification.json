@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "passed": true,
+  "application_build_runner": "Depot",
+  "source_repository": "l1felabs/useweave",
+  "source_commit": "d921625575bad70ffd51562dd7320061a744a0aa",
+  "workflow_repository": "l1felabs/weave-release-source",
+  "workflow_commit": "d86355bc89c2e705d005f8d892fffb7c95e1db1a",
+  "workflow_ref": "l1felabs/weave-release-source/.github/workflows/installer-012-qualification.yml@refs/heads/codex/joinweave-012-validation",
+  "run_id": "38275855056",
+  "runner_name": "depot-pv7zqm67dc",
+  "tests_sha256": "ffce69a2dd2807abb9848f013204487264ee20b7af70efe3371f73a26c6cc8ce",
+  "archive_sha256": "e15ea5d8ef26093c29dc5b9654823e1a0ce8bb4f70fe4a8cc3dd9f2ff33b911d",
+  "manifest_sha256": "6540098573a589eb9e6524334f1c943b3da4656dc8956fd07e3079716360b668",
+  "completed": "2026-10-12T16:13:32.617Z",
+  "npm_publication_performed": false
+}

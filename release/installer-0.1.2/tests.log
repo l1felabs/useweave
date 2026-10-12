@@ -1,0 +1,376 @@
+
+> joinweave-packages@0.1.0 test
+> npm run test --workspaces --if-present
+
+
+> @useweave/cli@0.1.0 test
+> node --test test/*.test.mjs
+
+TAP version 13
+# Subtest: resolves matching package and rejects a different release
+ok 1 - resolves matching package and rejects a different release
+  ---
+  duration_ms: 3.020374
+  type: 'test'
+  ...
+# Subtest: unsupported platforms never attempt dependency resolution
+ok 2 - unsupported platforms never attempt dependency resolution
+  ---
+  duration_ms: 0.08946
+  type: 'test'
+  ...
+# Subtest: missing optional dependency gives recovery instructions
+ok 3 - missing optional dependency gives recovery instructions
+  ---
+  duration_ms: 0.071612
+  type: 'test'
+  ...
+# Subtest: rejects native binary symlinks and non-executable files
+ok 4 - rejects native binary symlinks and non-executable files
+  ---
+  duration_ms: 0.802843
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 34.39941
+
+> joinweave@0.1.2 test
+> node --test test/*.test.mjs
+
+TAP version 13
+# Subtest: headless rerun preserves user data and never edits detected clients or PATH
+ok 1 - headless rerun preserves user data and never edits detected clients or PATH
+  ---
+  duration_ms: 12.723249
+  type: 'test'
+  ...
+# Subtest: explicit consent merges MCP and PATH; uninstall removes only owned entries
+ok 2 - explicit consent merges MCP and PATH; uninstall removes only owned entries
+  ---
+  duration_ms: 8.730011
+  type: 'test'
+  ...
+# Subtest: refuses unmanaged or modified installed binaries even with an old receipt
+ok 3 - refuses unmanaged or modified installed binaries even with an old receipt
+  ---
+  duration_ms: 4.093199
+  type: 'test'
+  ...
+# Subtest: refuses symlinked workspace and app config without changing targets
+ok 4 - refuses symlinked workspace and app config without changing targets
+  ---
+  duration_ms: 3.681838
+  type: 'test'
+  ...
+# Subtest: doctor failure cannot produce success, and readiness can recover
+ok 5 - doctor failure cannot produce success, and readiness can recover
+  ---
+  duration_ms: 7.010212
+  type: 'test'
+  ...
+# Subtest: malformed or conflicting client configs are preserved
+ok 6 - malformed or conflicting client configs are preserved
+  ---
+  duration_ms: 4.024219
+  type: 'test'
+  ...
+# Subtest: uninstall preserves MCP entries modified after installation
+ok 7 - uninstall preserves MCP entries modified after installation
+  ---
+  duration_ms: 4.484041
+  type: 'test'
+  ...
+# Subtest: native service uses persistent binary, environment and user-level scope
+ok 8 - native service uses persistent binary, environment and user-level scope
+  ---
+  duration_ms: 12.084476
+  type: 'test'
+  ...
+# Subtest: service stop failure preserves the executable and service receipt
+ok 9 - service stop failure preserves the executable and service receipt
+  ---
+  duration_ms: 4.15298
+  type: 'test'
+  ...
+# Subtest: launchd teardown waits for deregistration before removing managed files
+ok 10 - launchd teardown waits for deregistration before removing managed files
+  ---
+  duration_ms: 5.228304
+  type: 'test'
+  ...
+# Subtest: persistent launchd registration reaches a bounded failure without deleting data
+ok 11 - persistent launchd registration reaches a bounded failure without deleting data
+  ---
+  duration_ms: 4.703451
+  type: 'test'
+  ...
+# Subtest: launchd command time consumes the shutdown budget and late absence preserves files
+ok 12 - launchd command time consumes the shutdown budget and late absence preserves files
+  ---
+  duration_ms: 4.496602
+  type: 'test'
+  ...
+# Subtest: unknown service shutdown preserves the binary and managed definition
+ok 13 - unknown service shutdown preserves the binary and managed definition
+  ---
+  duration_ms: 8.074607
+  type: 'test'
+  ...
+# Subtest: Codex merge preserves unrelated tables and rejects foreign weave tables
+ok 14 - Codex merge preserves unrelated tables and rejects foreign weave tables
+  ---
+  duration_ms: 7.255354
+  type: 'test'
+  ...
+# Subtest: purge removes only dedicated workspace and preserves visible shared files
+ok 15 - purge removes only dedicated workspace and preserves visible shared files
+  ---
+  duration_ms: 3.516226
+  type: 'test'
+  ...
+# Subtest: flags keep unattended app-config consent explicit
+ok 16 - flags keep unattended app-config consent explicit
+  ---
+  duration_ms: 0.139141
+  type: 'test'
+  ...
+# Subtest: systemd directives preserve literal dollar signs and escape percent specifiers
+ok 17 - systemd directives preserve literal dollar signs and escape percent specifiers
+  ---
+  duration_ms: 5.403106
+  type: 'test'
+  ...
+# Subtest: systemd parses real managed units with ordinary, spaced and percent paths
+ok 18 - systemd parses real managed units with ordinary, spaced and percent paths
+  ---
+  duration_ms: 115.372137
+  type: 'test'
+  ...
+# Subtest: tampered Codex receipt cannot remove unrelated content
+ok 19 - tampered Codex receipt cannot remove unrelated content
+  ---
+  duration_ms: 6.39645
+  type: 'test'
+  ...
+# Subtest: One and Bridge configuration remains manual, including explicit headless consent
+ok 20 - One and Bridge configuration remains manual, including explicit headless consent
+  ---
+  duration_ms: 3.575497
+  type: 'test'
+  ...
+# Subtest: JSON CLI mode returns one parseable result for help and argument failures
+ok 21 - JSON CLI mode returns one parseable result for help and argument failures
+  ---
+  duration_ms: 44.111426
+  type: 'test'
+  ...
+# Subtest: persistent MCP is staged once, pinned, script-free, and retained on modifications
+ok 22 - persistent MCP is staged once, pinned, script-free, and retained on modifications
+  ---
+  duration_ms: 5.600556
+  type: 'test'
+  ...
+# Subtest: npm failure never promotes a partial MCP runtime or reports ready
+ok 23 - npm failure never promotes a partial MCP runtime or reports ready
+  ---
+  duration_ms: 1.828569
+  type: 'test'
+  ...
+# Subtest: --no-mcp skips the managed server and client prompts without invented inventory
+ok 24 - --no-mcp skips the managed server and client prompts without invented inventory
+  ---
+  duration_ms: 1.547477
+  type: 'test'
+  ...
+# Subtest: explicit consent migrates owned legacy MCP definitions; headless does not
+ok 25 - explicit consent migrates owned legacy MCP definitions; headless does not
+  ---
+  duration_ms: 14.044646
+  type: 'test'
+  ...
+# Subtest: runtime census rejects foreign trees, added files and symlinks without deleting them
+ok 26 - runtime census rejects foreign trees, added files and symlinks without deleting them
+  ---
+  duration_ms: 4.563921
+  type: 'test'
+  ...
+# Subtest: an interrupted MCP atomic commit recovers its exact journaled stage and preserves mismatches
+ok 27 - an interrupted MCP atomic commit recovers its exact journaled stage and preserves mismatches
+  ---
+  duration_ms: 4.858023
+  type: 'test'
+  ...
+# Subtest: intact owned MCP entries survive Node relocation and explicitly migrate or uninstall
+ok 28 - intact owned MCP entries survive Node relocation and explicitly migrate or uninstall
+  ---
+  duration_ms: 23.026907
+  type: 'test'
+  ...
+# Subtest: unconfirmed npm termination retains the live-child lock and stage rather than cleaning underneath it
+ok 29 - unconfirmed npm termination retains the live-child lock and stage rather than cleaning underneath it
+  ---
+  duration_ms: 2.282711
+  type: 'test'
+  ...
+# Subtest: readiness cancellation does not sleep or retry after an interrupted native child
+ok 30 - readiness cancellation does not sleep or retry after an interrupted native child
+  ---
+  duration_ms: 3.129675
+  type: 'test'
+  ...
+# Subtest: pin/source verification refuses wrong integrity and non-registry dependencies before use
+ok 31 - pin/source verification refuses wrong integrity and non-registry dependencies before use
+  ---
+  duration_ms: 5.435125
+  type: 'test'
+  ...
+# Subtest: census rejects linked/special files and records exact content/mode ownership
+ok 32 - census rejects linked/special files and records exact content/mode ownership
+  ---
+  duration_ms: 1.938938
+  type: 'test'
+  ...
+# Subtest: npm CLI resolution supports npx sibling and refuses an absent distribution
+ok 33 - npm CLI resolution supports npx sibling and refuses an absent distribution
+  ---
+  duration_ms: 0.668364
+  type: 'test'
+  ...
+# Subtest: abort cancels an actual child command rather than leaving an installer subprocess alive
+ok 34 - abort cancels an actual child command rather than leaving an installer subprocess alive
+  ---
+  duration_ms: 102.374887
+  type: 'test'
+  ...
+# Subtest: published MCP installs atomically and serves ten real stdio tools from its persistent tree
+ok 35 - published MCP installs atomically and serves ten real stdio tools from its persistent tree
+  ---
+  duration_ms: 1193.598985
+  type: 'test'
+  ...
+# Subtest: abort and timeout kill a real SIGTERM-ignoring child before returning
+ok 36 - abort and timeout kill a real SIGTERM-ignoring child before returning
+  ---
+  duration_ms: 1767.981083
+  type: 'test'
+  ...
+# Subtest: woven geometry has deterministic depth, phase motion and bounded ASCII dimensions
+ok 37 - woven geometry has deterministic depth, phase motion and bounded ASCII dimensions
+  ---
+  duration_ms: 12.84328
+  type: 'test'
+  ...
+# Subtest: TTY animation uses actual stages and restores cursor/timers/listeners around consent and final cleanup
+ok 38 - TTY animation uses actual stages and restores cursor/timers/listeners around consent and final cleanup
+  ---
+  duration_ms: 4.206279
+  type: 'test'
+  ...
+# Subtest: JSON emits no output, events, cursor controls or timers even on a TTY
+ok 39 - JSON emits no output, events, cursor controls or timers even on a TTY
+  ---
+  duration_ms: 0.13646
+  type: 'test'
+  ...
+# Subtest: nonTTY, TERM=dumb and opt-out provide readable progress without escape sequences or motion
+ok 40 - nonTTY, TERM=dumb and opt-out provide readable progress without escape sequences or motion
+  ---
+  duration_ms: 0.131751
+  type: 'test'
+  ...
+# Subtest: NO_COLOR disables color, narrow resize never wraps generated lines, and labels cannot inject controls
+ok 41 - NO_COLOR disables color, narrow resize never wraps generated lines, and labels cannot inject controls
+  ---
+  duration_ms: 1.652907
+  type: 'test'
+  ...
+# Subtest: summary reflects actual installed/skipped components and consent rather than promising desktop or registration
+ok 42 - summary reflects actual installed/skipped components and consent rather than promising desktop or registration
+  ---
+  duration_ms: 0.162501
+  type: 'test'
+  ...
+1..42
+# tests 42
+# suites 0
+# pass 42
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3106.994572
+
+> @useweave/mcp@0.1.0 test
+> node --test test/*.test.js
+
+TAP version 13
+# Subtest: all native command contracts map exactly and data is supplied through stdin
+ok 1 - all native command contracts map exactly and data is supplied through stdin
+  ---
+  duration_ms: 3.569049
+  type: 'test'
+  ...
+# Subtest: invalid arguments, unsafe names, oversized UTF-8 and excessive read/wait ranges never reach the CLI
+ok 2 - invalid arguments, unsafe names, oversized UTF-8 and excessive read/wait ranges never reach the CLI
+  ---
+  duration_ms: 1.272617
+  type: 'test'
+  ...
+# Subtest: failed and malformed native results remain tool errors
+ok 3 - failed and malformed native results remain tool errors
+  ---
+  duration_ms: 0.159981
+  type: 'test'
+  ...
+# Subtest: real subprocess adapter adds --json and preserves exact Unicode/newline input
+ok 4 - real subprocess adapter adds --json and preserves exact Unicode/newline input
+  ---
+  duration_ms: 21.68952
+  type: 'test'
+  ...
+# Subtest: real subprocess nonzero exits cannot report success
+ok 5 - real subprocess nonzero exits cannot report success
+  ---
+  duration_ms: 36.54371
+  type: 'test'
+  ...
+# Subtest: invalid JSON, timeout, cancellation and output overflow fail closed
+ok 6 - invalid JSON, timeout, cancellation and output overflow fail closed
+  ---
+  duration_ms: 243.507936
+  type: 'test'
+  ...
+# Subtest: explicit binary and home overrides fail closed instead of choosing a fallback
+ok 7 - explicit binary and home overrides fail closed instead of choosing a fallback
+  ---
+  duration_ms: 0.495442
+  type: 'test'
+  ...
+# Subtest: mutating tools expose accurate read-only hints
+ok 8 - mutating tools expose accurate read-only hints
+  ---
+  duration_ms: 0.140031
+  type: 'test'
+  ...
+# Subtest: stdio initializes, lists tools, calls the CLI and validates input without corrupting stdout
+ok 9 - stdio initializes, lists tools, calls the CLI and validates input without corrupting stdout
+  ---
+  duration_ms: 107.002697
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 383.604265
