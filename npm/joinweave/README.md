@@ -2,11 +2,11 @@
 
 The web wasn't built for agents. Weave was.
 
-Version 0.2.0 installs the native API-2 runtime and a persistent 46-tool MCP
+Version 0.2.1 installs the native API-2 runtime and a persistent 46-tool MCP
 server for node operations, Strands and six data-model families.
 
 ```sh
-npx joinweave@0.2.0
+npx joinweave@0.2.1
 ```
 
 One command installs the developer runtime: the prebuilt native CLI, a local
@@ -50,7 +50,7 @@ modified installer entries and unsafe symbolic links are refused. Configuration
 edits use atomic replacements and private backup files beside the config.
 
 ```sh
-npx joinweave@0.2.0 --yes --json
+npx joinweave@0.2.1 --yes --json
 ```
 
 `--json` produces exactly one JSON result on stdout, with no animation, prompts
@@ -58,7 +58,7 @@ or progress noise. Errors return `ok: false` and a nonzero exit status.
 `--yes` skips all PATH and client configuration questions. To explicitly consent:
 
 ```sh
-npx joinweave@0.2.0 --yes --path --mcp-client cursor,codex --json
+npx joinweave@0.2.1 --yes --path --mcp-client cursor,codex --json
 ```
 
 The installer supports `claude-desktop`, `claude-code`, `cursor`, and `codex`.
@@ -87,7 +87,7 @@ MCP tree is reported as installed.
 
 ## Upgrading an existing installation
 
-Run the same 0.2.0 installer against the existing workspace. It verifies ownership,
+Run the same 0.2.1 installer against the existing workspace. It verifies ownership,
 stops the old managed or detached node before replacing its executable, and starts
 the API2 runtime with the same identity and data. A modified binary, service,
 runtime or client entry is preserved and reported.
@@ -97,7 +97,7 @@ The old 0.1.0 MCP tree and its private census remain available alongside the new
 the result lists `mcpClientsNeedingUpdate` and prints an explicit migration command:
 
 ```sh
-npx joinweave@0.2.0 --yes --mcp-client cursor,codex
+npx joinweave@0.2.1 --yes --mcp-client cursor,codex
 ```
 
 Select only the clients you want to reconnect. The installer migrates an intact
@@ -140,8 +140,8 @@ version string; this release retains native service receipt protocol 0.1.0.
 ## Recovery and removal
 
 ```sh
-npx joinweave@0.2.0 uninstall --yes
-npx joinweave@0.2.0 uninstall --yes --purge
+npx joinweave@0.2.1 uninstall --yes
+npx joinweave@0.2.1 uninstall --yes --purge
 ```
 
 Uninstall stops the node and removes only owned service, executable, PATH,
@@ -157,10 +157,10 @@ SIGTERM/SIGKILL escalation. If termination cannot be confirmed, its persistent
 lock and MCP stage are retained. A new installer refuses the lock while its
 recorded parent or child is alive; do not manually remove it under a live process.
 
-## GitHub release updates (development source)
+## GitHub release updates
 
-This update feature is not in the published 0.2.0 archive. It requires a future
-reviewed release containing the updater and a signed GitHub update catalog.
+Version 0.2.1 includes explicit GitHub release checks and updates. A release must
+provide its signed update catalog and exact archives before it can be selected.
 
 ```sh
 joinweave update --check --json
@@ -175,7 +175,9 @@ expiry, exact source bindings, package versions, platform and archive digests.
 Release availability follows the receipt’s installer version; native and MCP
 packages keep their own signed versions, so an installer patch can preserve
 the existing runtime. Component downgrades are refused. Receipts without a
-valid installer version require a managed reinstall before update checks.
+valid installer version require a managed reinstall before update checks. An
+interrupted upgrade retains its last completed installer version until doctor
+succeeds, so a failed update remains eligible for retry.
 No GitHub CLI or GitHub login is required. Network, signature, missing-catalog
 and downgrade errors fail closed; they do not become a claim that Weave is current.
 Node ^20.17.0 or >=22.9.0 is required by the pinned verifier.

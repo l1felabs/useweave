@@ -125,9 +125,13 @@ path/hash references. Do not invent those inputs or mark this workflow tested
 until its real signing and negative-verification acceptance passes.
 
 The existing Depot `output` target now also syntax-checks the prepared signing
-script without executing it. Current source still carries package version
-0.2.0; Root freezes the 0.2.1 package/version/lock when the new release is prepared.
+script without executing it. The installer package/version/lock identify the
+prepared 0.2.1 successor; this is not a publication or signed-catalog claim.
 Runtime/CLI/MCP and all existing archives remain 0.2.0 and byte-identical.
 
 Primary attestation API reference:
 https://github.com/sigstore/sigstore-js/tree/main/packages/client#attestpayload-payloadtype-options
+
+The `release-artifact` target runs the same frozen-lock checks before packing only
+joinweave 0.2.1. It exports the exact installer archive, npm pack metadata, test
+log, consumed lock and Node/npm versions. No native/CLI/MCP archives are repacked.

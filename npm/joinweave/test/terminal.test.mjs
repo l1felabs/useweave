@@ -107,6 +107,6 @@ test('summary reflects actual installed/skipped components and consent rather th
 
 test('upgrade summary names only retained clients requiring explicit migration consent', () => {
   const text = installationSummary({ binary: '/a/weave', workspace: '/a/.weave', shared: '/a/Weave', pathAdded: true, mcpClients: ['cursor', 'codex'], mcpClientsNeedingUpdate: ['cursor'], components: [] });
-  assert.ok(text.includes('npx joinweave@0.2.0 --yes --mcp-client cursor'));
+  assert.ok(text.includes('npx joinweave@0.2.1 --yes --mcp-client cursor'));
   assert.equal(text.includes('--mcp-client cursor,codex'), false);
 });

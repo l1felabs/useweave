@@ -39,6 +39,10 @@ function fixture(t, { platform = 'linux', response, homeName = 'home with spaces
 }
 const headless = () => parseArgs(['--yes', '--json', '--no-service']);
 
+test('installer version matches its package metadata', () => {
+  assert.equal(VERSION, JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url))).version);
+});
+
 test('headless rerun preserves user data and never edits detected clients or PATH', async (t) => {
   const f = fixture(t), config = join(f.home, '.cursor', 'mcp.json');
   fs.mkdirSync(join(f.home, '.cursor'));
@@ -226,7 +230,7 @@ test('launchd teardown waits for deregistration before removing managed files', 
   installed = await f.installer().install(parseArgs(['--yes']));
   const receipt = JSON.parse(fs.readFileSync(join(installed.workspace, '.joinweave-install.json'), 'utf8'));
   assert.equal(receipt.version, '0.1.0');
-  assert.equal(receipt.installerVersion, '0.2.0');
+  assert.equal(receipt.installerVersion, VERSION);
   assert.equal(receipt.binary.version, '0.1.0');
   assert.equal(receipt.binary.packageVersion, '0.2.0');
   definition = receipt.service.path;
@@ -803,7 +807,7 @@ test('modified legacy client blocks its migration and preserves both runtime tre
   assert.equal(fs.existsSync(f.installer().mcpRuntime.entry), true);
 });
 
-test('0.2.0 can uninstall a retained 0.1.3 installation without downloading an upgrade', async (t) => {
+test('current installer can uninstall a retained 0.1.3 installation without downloading an upgrade', async (t) => {
   const f = fixture(t), old = await installLegacy(f, ['cursor', 'codex']);
   fs.writeFileSync(join(old.weaveHome, 'retained-strand'), 'keep');
   assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);

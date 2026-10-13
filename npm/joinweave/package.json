@@ -1,6 +1,6 @@
 {
   "name": "joinweave",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "One command to join the Weave agent-native web.",
   "license": "MIT OR Apache-2.0",

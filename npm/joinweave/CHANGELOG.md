@@ -1,3 +1,8 @@
+## 0.2.1 — Prepared installer-only GitHub updater (2026-10-13)
+
+- Version the installer, lock metadata, terminal follow-up commands and packed guide at 0.2.1. Keep the native distributions, CLI and MCP at their six exact qualified 0.2.0 archives; native service protocol remains 0.1.0/API2.
+- Pre-version source a921c711 passes Depot 6tlr2vjr64: 95 checks pass, two environment-dependent checks remain explicitly skipped, and the prepared signer passes syntax checking. Add an exact installer/package version regression and a Depot target that packs only joinweave after its frozen-lock tests. Final-head qualification, signed-catalog verification and real managed update acceptance remain pending; no publication or automatic update activation is claimed.
+
 ## 2026-10-13 — Prepare installer-only GitHub updates
 
 - Compare signed release availability with the managed receipt’s installerVersion; verify each package against its own signed version, filename and lock entry. Reject missing installer versions and independent native/MCP downgrades. This permits a future joinweave 0.2.1 release to retain the six qualified 0.2.0 components without changing their archives or installed MCP tree.
