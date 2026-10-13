@@ -9,9 +9,9 @@ import { REPOSITORY, IDENTITY, ISSUER, MANIFEST_NAME, BUNDLE_NAME, archiveName, 
 import { updateWorkspace, verifyStagedPackages } from '../src/update.js';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const now = Date.parse('2026-10-13T12:00:00Z');
-function fixture(version = '0.2.1') {
+function fixture(version = '0.2.1', componentVersion = '0.2.0') {
   const names = ['@useweave/cli-darwin-arm64', '@useweave/cli-darwin-x64', '@useweave/cli-linux-arm64', '@useweave/cli-linux-x64', '@useweave/cli', '@useweave/mcp', 'joinweave'];
-  const catalog = { schema: 1, repository: REPOSITORY, channel: 'stable', version, issuedAt: new Date(now - 60_000).toISOString(), expiresAt: new Date(now + 86400_000).toISOString(), packageSourceCommit: '1'.repeat(40), nativeSourceCommit: '2'.repeat(40), releaseManifestSha256: '3'.repeat(64), installerProtocol: 1, runtimeApiVersion: 2, receiptVersion: '0.1.0', requiresStoreMigration: false, packages: names.map(name => ({ name, version, asset: archiveName(name, version), sha256: '4'.repeat(64), integrity: 'sha512-' + Buffer.alloc(64).toString('base64'), bytes: 100 })) };
+  const catalog = { schema: 1, repository: REPOSITORY, channel: 'stable', version, issuedAt: new Date(now - 60_000).toISOString(), expiresAt: new Date(now + 86400_000).toISOString(), packageSourceCommit: '1'.repeat(40), nativeSourceCommit: '2'.repeat(40), releaseManifestSha256: '3'.repeat(64), installerProtocol: 1, runtimeApiVersion: 2, receiptVersion: '0.1.0', requiresStoreMigration: false, packages: names.map(name => ({ name, version: name === 'joinweave' ? version : componentVersion, asset: archiveName(name, name === 'joinweave' ? version : componentVersion), sha256: '4'.repeat(64), integrity: 'sha512-' + Buffer.alloc(64).toString('base64'), bytes: 100 })) };
   const release = { tag_name: `v${version}`, draft: false, prerelease: false, html_url: `https://github.com/${REPOSITORY}/releases/tag/v${version}`, assets: [MANIFEST_NAME, BUNDLE_NAME].map(name => ({ name, browser_download_url: assetURL(version, name) })) };
   const bytes = Buffer.from(JSON.stringify(catalog));
   const statement = { _type: 'https://in-toto.io/Statement/v1', predicateType: 'https://slsa.dev/provenance/v1', subject: [{ name: MANIFEST_NAME, digest: { sha256: hash(bytes) } }] };
@@ -94,8 +94,8 @@ test('npm staging cannot substitute registry archives or foreign dependencies', 
   const owner = workspace(t), stage = join(owner.weaveHome, 'stage'); fs.mkdirSync(stage);
   const p = fixture().catalog.packages.at(-1); fs.mkdirSync(join(stage, 'node_modules/joinweave'), { recursive: true }); fs.writeFileSync(join(stage, 'node_modules/joinweave/package.json'), JSON.stringify({ name: p.name, version: p.version }));
   const lock = { lockfileVersion: 3, packages: { '': {}, 'node_modules/joinweave': { version: p.version, resolved: 'file:' + join(stage, p.asset), integrity: p.integrity } } };
-  const save = () => fs.writeFileSync(join(stage, 'package-lock.json'), JSON.stringify(lock)); save(); verifyStagedPackages(stage, [p], p.version);
-  lock.packages['node_modules/joinweave'].resolved = 'https://registry.npmjs.org/joinweave/-/' + p.asset; save(); assert.throws(() => verifyStagedPackages(stage, [p], p.version), { code: 'INVALID_UPDATE_LOCK' });
+  const save = () => fs.writeFileSync(join(stage, 'package-lock.json'), JSON.stringify(lock)); save(); verifyStagedPackages(stage, [p]);
+  lock.packages['node_modules/joinweave'].resolved = 'https://registry.npmjs.org/joinweave/-/' + p.asset; save(); assert.throws(() => verifyStagedPackages(stage, [p]), { code: 'INVALID_UPDATE_LOCK' });
 });
 
 test('handoff cancellation lets the lock owner complete subprocess cleanup beyond 500ms', async t => {
@@ -104,4 +104,69 @@ test('handoff cancellation lets the lock owner complete subprocess cleanup beyon
   const result = await runCommand(process.execPath, [script], { timeout: 1000, killOnTimeout: false, terminationWaitMs: 4000 });
   assert.equal(result.terminationConfirmed, true);
   assert.match(result.stdout, /cleanup-complete/);
+});
+
+
+test('installer-only catalog preserves six independently versioned components', () => {
+  const f = fixture();
+  assert.equal(validateCatalog(f.catalog, f.release, '0.2.0', now), f.catalog);
+  assert.equal(f.catalog.packages.filter(p => p.version === '0.2.0').length, 6);
+  for (const mutate of [
+    f => { f.catalog.packages[0].version = '0.2.1'; },
+    f => { f.catalog.packages[0].version = '0.2.0-beta'; },
+    f => { f.catalog.packages.at(-1).version = '0.2.0'; f.catalog.packages.at(-1).asset = archiveName('joinweave', '0.2.0'); },
+  ]) { const bad = fixture(); mutate(bad); assert.throws(() => validateCatalog(bad.catalog, bad.release, '0.2.0', now)); }
+});
+test('installer receipt makes a component-preserving update check idempotent', async t => {
+  const owner = workspace(t), f = fixture(), seen = [];
+  const fetchImpl = async url => new Response(url.includes('api.github.com') ? JSON.stringify(f.release) : url.endsWith(BUNDLE_NAME) ? JSON.stringify(f.bundle) : f.bytes);
+  const discover = async current => { seen.push(current); return discoverRelease(current, { now, fetchImpl, verify: async () => {} }); };
+  assert.equal((await updateWorkspace(owner, parseArgs(['update', '--check']), { discover })).available, true);
+  // Simulate the successful successor installer receipt; native/MCP stay 0.2.0.
+  const receipt = JSON.parse(fs.readFileSync(owner.manifestPath)); receipt.installerVersion = '0.2.1';
+  fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
+  const before = fs.readFileSync(owner.manifestPath);
+  for (let n = 0; n < 2; n++) {
+    const result = await updateWorkspace(owner, parseArgs(['update', '--yes', '--json']), { discover });
+    assert.equal(result.currentVersion, '0.2.1'); assert.equal(result.available, false); assert.equal(result.applied, false);
+  }
+  assert.deepEqual(seen, ['0.2.0', '0.2.1', '0.2.1']);
+  assert.deepEqual(fs.readFileSync(owner.manifestPath), before); assert.equal(fs.existsSync(join(owner.weaveHome, 'updates')), false);
+});
+test('missing or malformed installer version and component downgrades fail closed', async t => {
+  const owner = workspace(t), original = JSON.parse(fs.readFileSync(owner.manifestPath));
+  for (const version of [undefined, '0.2.1-beta', 2]) {
+    fs.writeFileSync(owner.manifestPath, JSON.stringify({ ...original, installerVersion: version }));
+    await assert.rejects(updateWorkspace(owner, parseArgs(['update', '--check']), { discover: async () => assert.fail('must reject before discovery') }));
+  }
+  fs.writeFileSync(owner.manifestPath, JSON.stringify(original));
+  const f = fixture('0.2.1', '0.1.0');
+  await assert.rejects(updateWorkspace(owner, parseArgs(['update', '--check']), { discover: async () => ({ catalog: f.catalog, available: true }) }), { code: 'RELEASE_DOWNGRADE' });
+  const receipt = { ...original, mcpRuntime: { version: '0.3.0' } }; fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
+  await assert.rejects(updateWorkspace(owner, parseArgs(['update', '--check']), { discover: async () => ({ catalog: fixture().catalog, available: true }) }), { code: 'RELEASE_DOWNGRADE' });
+});
+test('mixed-version staging checks each exact package version and archive origin', t => {
+  const owner = workspace(t), stage = join(owner.weaveHome, 'mixed'); fs.mkdirSync(stage);
+  const selected = fixture().catalog.packages.filter(p => ['joinweave', '@useweave/cli', '@useweave/cli-linux-x64', '@useweave/mcp'].includes(p.name));
+  const lock = { lockfileVersion: 3, packages: { '': {} } };
+  for (const p of selected) {
+    const directory = join(stage, 'node_modules', p.name); fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(join(directory, 'package.json'), JSON.stringify({ name: p.name, version: p.version }));
+    lock.packages[`node_modules/${p.name}`] = { version: p.version, resolved: 'file:' + join(stage, p.asset), integrity: p.integrity };
+  }
+  const save = () => fs.writeFileSync(join(stage, 'package-lock.json'), JSON.stringify(lock)); save();
+  verifyStagedPackages(stage, selected);
+  const installer = selected.find(p => p.name === 'joinweave');
+  const installerMetadata = join(stage, 'node_modules/joinweave/package.json');
+  fs.writeFileSync(installerMetadata, JSON.stringify({ name: installer.name, version: installer.version, dependencies: { '@useweave/cli': '0.1.0' } }));
+  assert.throws(() => verifyStagedPackages(stage, selected), { code: 'INVALID_UPDATE_PACKAGE' });
+  fs.writeFileSync(installerMetadata, JSON.stringify({ name: installer.name, version: installer.version, dependencies: { '@useweave/cli': '0.2.0' } }));
+  verifyStagedPackages(stage, selected);
+  const native = selected.find(p => p.name === '@useweave/cli-linux-x64'), key = `node_modules/${native.name}`;
+  lock.packages[key].version = '0.2.1'; save(); assert.throws(() => verifyStagedPackages(stage, selected), { code: 'INVALID_UPDATE_LOCK' });
+  lock.packages[key].version = native.version; lock.packages[key].resolved = 'file:' + join(stage, archiveName(native.name, '0.2.1')); save();
+  assert.throws(() => verifyStagedPackages(stage, selected), { code: 'INVALID_UPDATE_LOCK' });
+  lock.packages[key].resolved = 'file:' + join(stage, native.asset); save();
+  fs.writeFileSync(join(stage, key, 'package.json'), JSON.stringify({ name: native.name, version: '0.2.1' }));
+  assert.throws(() => verifyStagedPackages(stage, selected), { code: 'INVALID_UPDATE_PACKAGE' });
 });

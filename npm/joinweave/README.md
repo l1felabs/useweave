@@ -172,6 +172,10 @@ joinweave update --yes --json
 The check uses stable releases from `l1felabs/useweave`. It authenticates the
 catalog to the pinned GitHub release workflow using Sigstore, then checks its
 expiry, exact source bindings, package versions, platform and archive digests.
+Release availability follows the receipt’s installer version; native and MCP
+packages keep their own signed versions, so an installer patch can preserve
+the existing runtime. Component downgrades are refused. Receipts without a
+valid installer version require a managed reinstall before update checks.
 No GitHub CLI or GitHub login is required. Network, signature, missing-catalog
 and downgrade errors fail closed; they do not become a claim that Weave is current.
 Node ^20.17.0 or >=22.9.0 is required by the pinned verifier.

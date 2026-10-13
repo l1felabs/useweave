@@ -1,3 +1,8 @@
+## 2026-10-13 — Prepare installer-only GitHub updates
+
+- Compare signed release availability with the managed receipt’s installerVersion; verify each package against its own signed version, filename and lock entry. Reject missing installer versions and independent native/MCP downgrades. This permits a future joinweave 0.2.1 release to retain the six qualified 0.2.0 components without changing their archives or installed MCP tree.
+- Add mixed-version, repeated-check, tampered package/lock and downgrade regressions. Prepare an inert catalog-signing workflow and exact immutable-input verifier for review; no workflow registration, signature, publication, new credentials or automatic updater activation. Package versions, dependency lock and existing release archives remain unchanged; fresh Depot qualification and real signed-catalog/managed-update acceptance remain required.
+
 ## 2026-10-13 — Freeze updater dependencies for Depot qualification
 
 - Import the exact lock from Depot 8sst4x7r4m (SHA256 715980c339de874b5670c7ecaea66521a5921590cc804c2860fa7a8a14be155a) after independent review confirmed existing native package versions, registry URLs and integrity pins are unchanged; additions are the pinned Sigstore verifier dependency closure.

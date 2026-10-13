@@ -13,14 +13,20 @@ its workspace lock. This is protocol 1; older installers lack the flag and are
 not compatible targets. Updates use Node/npm already required by joinweave.
 
 Repository: `l1felabs/useweave`. Stable tag: `vMAJOR.MINOR.PATCH`. Required assets:
-`weave-update.json`, `weave-update.sigstore.json`, and seven version-aligned npm
-archives named like the existing release manifest. No prerelease or downgrade.
+`weave-update.json`, `weave-update.sigstore.json`, and seven explicitly versioned npm
+archives. The catalog/tag version identifies joinweave; each other component
+keeps its own exact signed version and archive filename. An installer-only
+0.2.1 release can reuse all six qualified 0.2.0 component archives unchanged.
+Assets retain those original filenames when copied to the new GitHub release. No prerelease or downgrade.
 The JSON catalog fields are schema=1, repository, channel=stable, version,
 issuedAt, expiresAt (at most 31 days after issue), packageSourceCommit,
 nativeSourceCommit, releaseManifestSha256, installerProtocol=1,
 runtimeApiVersion=2, receiptVersion=0.1.0, requiresStoreMigration=false and
 packages[{name,version,asset,sha256,integrity,bytes}]. Native architecture selection
-uses the current OS/CPU. Preserve exact previously qualified archive bytes.
+uses the current OS/CPU. Availability compares receipt.installerVersion, not
+the native package or service-protocol version; missing/invalid installer
+versions fail closed. Native/MCP component downgrades are refused independently.
+Preserve exact previously qualified archive bytes.
 
 The Sigstore bundle must carry an in-toto v1 statement with SLSA provenance v1
 predicate and exactly one subject `weave-update.json`, SHA256 of the exact JSON.
@@ -55,10 +61,10 @@ Root owns execution. No local builds/tests were run during authoring.
    from the exact authorized workflow, then reject its mutated JSON and a
    genuine bundle signed by another workflow. Mock policy tests do not replace
    this cryptographic positive/negative check.
-4. Before the target release is frozen, extend its ManagedMcp recognition from
-   the current legacy 0.1.0 path to the installed 0.2.0 predecessor. The current
-   immutable release does not provide arbitrary future-version MCP migration.
-   In a genuine Depot Ubuntu user/systemd job, install the published 0.2.0
+4. The installer-only successor retains MCP 0.2.0 and its existing verified
+   tree; it needs no MCP version migration. Any later MCP-version change needs
+   separate predecessor recognition and qualification. In a genuine Depot
+   Ubuntu user/systemd job, install the published 0.2.0
    baseline and apply the exact future release through real GitHub assets.
    Confirm archive bytes, native API, manager PID, identity/model persistence,
    retained old MCP clients and unchanged agent configuration; reject changed
@@ -85,3 +91,41 @@ without adding stdout traffic to MCP's protocol stream.
 Primary verifier references:
 https://github.com/sigstore/sigstore-js/tree/main/packages/client
 https://docs.sigstore.dev/language_clients/javascript/
+
+## Prepared catalog signing operation (not registered)
+
+`release-catalog.yml.prepared` is inert preparation, not a file under
+`.github/workflows`. After exact review and explicit authorization for the
+GitHub OIDC signing exception, its intended path is the existing pinned
+`.github/workflows/release-catalog.yml`. Do not rename/register/dispatch it as
+part of source qualification. No credential needs to be created: the proposed
+job uses its ephemeral GitHub OIDC identity, contents:read and id-token:write;
+it cannot upload release assets or publish npm packages.
+
+The prepared job requires exact approved operations/release commits and catalog/
+manifest SHA256 values. `sign-catalog.mjs` is narrowly scoped to joinweave 0.2.1:
+it verifies clean immutable Git inputs, all seven archive SHA256/SHA512/lengths
+and package identities, matches the six reused components to published baseline
+commit `2d82bfb11baada03d3ecea37ea36daf8abe81534`, and compares every new installer
+archive file to its approved source Git blob. It signs only the exact approved
+catalog bytes, then runs the real pinned verifier before exporting the catalog,
+bundle and signing receipt. The statement describes metadata verification and
+approved archive bindings; it does not claim this signing job built or qualified
+the runtime. Underlying application tests/packing remain Depot work.
+
+Pending inputs are deliberately absent: `release/0.2.1/weave-update.json`,
+`release/0.2.1/manifest.json`, the actual qualified installer archive and its
+release/source commits. The manifest retains the existing 0.2.0 six-package
+entries/paths and adds joinweave at `release/0.2.1/npm/joinweave-0.2.1.tgz`.
+Catalog package entries match manifest name/version/hash/SRI/size, using the
+archive basename as `asset`. Existing qualification documents retain their
+path/hash references. Do not invent those inputs or mark this workflow tested
+until its real signing and negative-verification acceptance passes.
+
+The existing Depot `output` target now also syntax-checks the prepared signing
+script without executing it. Current source still carries package version
+0.2.0; Root freezes the 0.2.1 package/version/lock when the new release is prepared.
+Runtime/CLI/MCP and all existing archives remain 0.2.0 and byte-identical.
+
+Primary attestation API reference:
+https://github.com/sigstore/sigstore-js/tree/main/packages/client#attestpayload-payloadtype-options

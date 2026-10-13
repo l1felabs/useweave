@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { InstallError, VERSION, assertSafePath } from './installer.js';
 import { resolveNpmCli } from './managed-mcp.js';
-import { discoverRelease, download, assetURL, verifyArchive } from './github-release.js';
+import { discoverRelease, download, assetURL, verifyArchive, versionParts, compareVersions } from './github-release.js';
 import { unpack } from './release-tar.js';
 const fail = (code, message) => { throw new InstallError(code, message); };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -30,17 +30,25 @@ function ownedState(owner) {
   if (owner.manifest.binaryUpgrade) fail('UPDATE_RECOVERY_REQUIRED', 'Finish the interrupted installation before checking for another update.');
   const binary = read(owner.binary, 64 * 1024 * 1024);
   if (!owner.manifest.binary || hash(binary) !== owner.manifest.binary.sha256) fail('UNMANAGED_BINARY', 'The installed executable is modified or unowned. It was preserved.');
-  return { bytes, binary, version: owner.manifest.binary.packageVersion || owner.manifest.binary.version };
+  // Native package and service-protocol versions do not identify the installer.
+  const version = owner.manifest.installerVersion;
+  if (typeof version !== 'string') fail('UNKNOWN_INSTALLER_VERSION', 'The receipt has no installer version. Reinstall the current managed release before updating.');
+  versionParts(version);
+  return { bytes, binary, version, nativeVersion: owner.manifest.binary.packageVersion, mcpVersion: owner.manifest.mcpRuntime?.version };
 }
-export function verifyStagedPackages(stage, selected, version) {
+export function verifyStagedPackages(stage, selected) {
   const lock = JSON.parse(read(join(stage, 'package-lock.json'), 4 * 1024 * 1024));
   if (lock.lockfileVersion !== 3 || !lock.packages) fail('INVALID_UPDATE_LOCK', 'Update staging did not produce a recognized npm lock.');
   for (const p of selected) {
     const entry = lock.packages[`node_modules/${p.name}`];
-    if (!entry || entry.version !== version || entry.integrity !== p.integrity || entry.link
+    if (!entry || entry.version !== p.version || entry.integrity !== p.integrity || entry.link
       || !entry.resolved?.startsWith('file:') || resolve(stage, entry.resolved.slice(5)) !== join(stage, p.asset)) fail('INVALID_UPDATE_LOCK', 'Update staging substituted a Weave release archive.');
     const pkg = JSON.parse(read(join(stage, 'node_modules', p.name, 'package.json'), 1024 * 1024));
-    if (pkg.name !== p.name || pkg.version !== version) fail('INVALID_UPDATE_PACKAGE', 'Staged package identity does not match the signed release.');
+    if (pkg.name !== p.name || pkg.version !== p.version) fail('INVALID_UPDATE_PACKAGE', 'Staged package identity does not match the signed release.');
+    for (const [name, version] of Object.entries({ ...pkg.dependencies, ...pkg.optionalDependencies })) {
+      const dependency = selected.find(p => p.name === name);
+      if (dependency && version !== dependency.version) fail('INVALID_UPDATE_PACKAGE', 'A staged Weave dependency does not match the signed component version.');
+    }
   }
   for (const [path, entry] of Object.entries(lock.packages)) {
     if (!path || selected.some(p => path === `node_modules/${p.name}`)) continue;
@@ -56,6 +64,13 @@ export async function updateWorkspace(owner, options, { discover = discoverRelea
   const initial = exists ? ownedState(owner) : null;
   const currentVersion = initial?.version || VERSION;
   const release = await discover(currentVersion, { signal: owner.signal, fetchImpl });
+  if (initial) {
+    const native = release.catalog.packages.find(p => p.name === `@useweave/cli-${owner.platform}-${process.arch}`);
+    const mcp = release.catalog.packages.find(p => p.name === '@useweave/mcp');
+    for (const [entry, installed] of [[native, initial.nativeVersion], [mcp, initial.mcpVersion]]) {
+      if (installed && (!entry || compareVersions(entry.version, installed) < 0)) fail('RELEASE_DOWNGRADE', 'The release would downgrade an installed workspace component. Nothing was changed.');
+    }
+  }
   const result = { ok: true, action: 'update', currentVersion, version: release.catalog.version, available: release.available, applied: false, authenticated: true, releaseUrl: release.releaseUrl, automaticUpdates: false };
   if (options.check || !release.available) return result;
   if (!initial) fail('NO_INSTALL_RECEIPT', 'Install a managed workspace before applying an update.');
@@ -76,7 +91,7 @@ export async function updateWorkspace(owner, options, { discover = discoverRelea
     verifyArchive(bytes, p);
     const members = unpack(bytes);
     const pkg = JSON.parse(members.get('package/package.json')?.bytes.toString('utf8') || 'null');
-    if (pkg?.name !== p.name || pkg?.version !== result.version) fail('INVALID_UPDATE_PACKAGE', 'Release archive has a different package identity.');
+    if (pkg?.name !== p.name || pkg?.version !== p.version) fail('INVALID_UPDATE_PACKAGE', 'Release archive has a different package identity.');
     write(join(stage, p.asset), bytes);
   }
   write(join(stage, 'package.json'), JSON.stringify({ name: 'joinweave-verified-update', version: result.version, private: true }));
@@ -85,7 +100,7 @@ export async function updateWorkspace(owner, options, { discover = discoverRelea
   const npm = owner.npmCli || resolveNpmCli(env, owner.nodePath);
   const installed = await owner.run(owner.nodePath, [npm, 'install', '--prefix', stage, '--ignore-scripts', '--bin-links=false', '--omit=optional', '--no-audit', '--no-fund', '--save-exact', '--registry=https://registry.npmjs.org', '--loglevel=error', ...selected.map(p => join(stage, p.asset))], { env, cwd: stage, signal: owner.signal, timeout: 180_000 });
   if (installed.code !== 0) fail('UPDATE_STAGE_FAILED', `Could not stage the verified release. Existing workspace is unchanged. Evidence: ${stage}`);
-  verifyStagedPackages(stage, selected, result.version);
+  verifyStagedPackages(stage, selected);
   const recovery = join(stage, 'previous'); fs.mkdirSync(recovery, { mode: 0o700 });
   let receiptHash, noService, noMcp;
   owner.lock();

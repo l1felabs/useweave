@@ -71,9 +71,10 @@ export function validateCatalog(value, release, currentVersion, now = Date.now()
   if (!Number.isFinite(issued) || !Number.isFinite(expires) || issued > now + 300_000 || expires <= now || expires <= issued || expires - issued > 31 * 86400_000) fail('RELEASE_EXPIRED', 'Release catalog is expired or has invalid validity dates.');
   if (!/^[a-f0-9]{40}$/.test(value.packageSourceCommit || '') || !/^[a-f0-9]{40}$/.test(value.nativeSourceCommit || '')
     || !/^[a-f0-9]{64}$/.test(value.releaseManifestSha256 || '')) fail('INVALID_RELEASE_PROVENANCE', 'Release catalog is missing its exact source and archive-manifest bindings.');
-  if (!Array.isArray(value.packages) || value.packages.length !== packages.length || new Set(value.packages.map(p => p?.name)).size !== packages.length) fail('INVALID_RELEASE_METADATA', 'Release must contain the seven aligned Weave packages.');
+  if (!Array.isArray(value.packages) || value.packages.length !== packages.length || new Set(value.packages.map(p => p?.name)).size !== packages.length) fail('INVALID_RELEASE_METADATA', 'Release must contain each of the seven Weave packages exactly once.');
   for (const p of value.packages) {
-    if (!packages.includes(p.name) || p.version !== value.version || p.asset !== archiveName(p.name, value.version)
+    versionParts(p.version);
+    if (!packages.includes(p.name) || (p.name === 'joinweave' && p.version !== value.version) || p.asset !== archiveName(p.name, p.version)
       || !/^[a-f0-9]{64}$/.test(p.sha256 || '') || !/^sha512-[A-Za-z0-9+/]{86}==$/.test(p.integrity || '')
       || !Number.isSafeInteger(p.bytes) || p.bytes < 1 || p.bytes > 64 * 1024 * 1024) fail('INVALID_RELEASE_METADATA', 'Release package metadata is invalid.');
   }
