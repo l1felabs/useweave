@@ -23,7 +23,7 @@ No Rust toolchain is required.
 | Visible workspace | `~/Weave` |
 | MCP server 0.2.0, 46 tools | `~/.weave/tools/mcp-0.2.0`; independent of the npx cache |
 
-Requirements: Node.js 20 or later with npm; macOS arm64/x64 (binary minimum
+Requirements: Node.js ^20.17.0 or >=22.9.0 with npm; macOS arm64/x64 (binary minimum
 load target macOS 11), or Linux arm64/x64 with glibc 2.39 or later. Linux arm64
 also needs the system OpenSSL 3 libraries (`libssl.so.3`, `libcrypto.so.3`).
 Linux managed services require a logged-in `systemd --user` session. Windows,

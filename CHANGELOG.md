@@ -1,3 +1,8 @@
+## 2026-10-13 — Freeze updater dependencies for Depot qualification
+
+- Import the exact lock from Depot 8sst4x7r4m (SHA256 715980c339de874b5670c7ecaea66521a5921590cc804c2860fa7a8a14be155a) after independent review confirmed existing native package versions, registry URLs and integrity pins are unchanged; additions are the pinned Sigstore verifier dependency closure.
+- Align the unpublished successor's Node requirement with its engine and make the Depot test target consume this committed lock without re-resolving it. Application tests and real signed-catalog/update acceptance remain pending; no released archive, package version or production website requirement changes.
+
 ## 2026-10-13 — Prepare authenticated GitHub release checks and explicit updates
 
 - Add shared stable-release catalog discovery with pinned GitHub OIDC/Sigstore identity, signed-digest/source bindings, expiry, strict versions, bounded GitHub-only downloads and archive integrity checks. Missing catalog metadata fails closed; no key, account or release is created.

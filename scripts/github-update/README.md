@@ -42,10 +42,11 @@ A routine release must refresh expiring catalog metadata; failure stays visible.
 
 Root owns execution. No local builds/tests were run during authoring.
 
-1. Generate the genuine new dependency lock using npm on Depot, preserving all
-   existing Weave archive pins. Exact added dependency: sigstore 4.1.1. Review
-   lock changes before committing; the source commit intentionally has no
-   fabricated transitive resolution data.
+1. Dependency lock generated on Depot 8sst4x7r4m and independently reviewed.
+   Exact imported SHA256:
+   `715980c339de874b5670c7ecaea66521a5921590cc804c2860fa7a8a14be155a`.
+   Existing Weave archive pins are unchanged; added verifier is sigstore 4.1.1.
+   The `output` test target consumes this frozen lock without regenerating it.
 2. Run `npm ci --ignore-scripts --omit=optional` and `npm test` from `npm/` on
    Depot Node 22. Tests cover catalog trust policy, signed-digest mismatch,
    stable version/downgrade/expiry checks, redirects/size limits, archive digest
@@ -67,7 +68,7 @@ Root owns execution. No local builds/tests were run during authoring.
    retained recovery bytes and successful rerun of that same release. This is
    interrupted-install recovery, not health-based rollback qualification.
 
-Before publication: complete lock and tests, review exact source/archives, bump
+Before publication: complete tests, review exact source/archives, bump
 appropriate package versions, prepare/sign the catalog and qualify the real
 managed update. There is no permission here to publish or dispatch workflows.
 
