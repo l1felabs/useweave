@@ -1,0 +1,74 @@
+# PREPARATION ONLY: review and explicit workflow authorization are required
+# before placing these bytes at .github/workflows/release-catalog.yml.
+name: Attest approved Weave update catalog
+on:
+  workflow_dispatch:
+    inputs:
+      approved_ops_commit:
+        description: Reviewed main commit containing the exact signing operations
+        type: string
+        required: true
+      approved_release_commit:
+        description: Reviewed commit containing the catalog, manifest and exact archives
+        type: string
+        required: true
+      approved_catalog_sha256:
+        description: Reviewed SHA256 of release/0.2.1/weave-update.json
+        type: string
+        required: true
+      approved_manifest_sha256:
+        description: Reviewed SHA256 of release/0.2.1/manifest.json
+        type: string
+        required: true
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: useweave-release-catalog
+  cancel-in-progress: false
+jobs:
+  attest:
+    if: github.repository == 'l1felabs/useweave' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APPROVED_OPS_COMMIT: ${{ inputs.approved_ops_commit }}
+      APPROVED_RELEASE_COMMIT: ${{ inputs.approved_release_commit }}
+      APPROVED_CATALOG_SHA256: ${{ inputs.approved_catalog_sha256 }}
+      APPROVED_MANIFEST_SHA256: ${{ inputs.approved_manifest_sha256 }}
+    steps:
+      - name: Require the reviewed signing revision
+        run: |
+          set -euo pipefail
+          [[ "$APPROVED_OPS_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APPROVED_RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APPROVED_CATALOG_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          [[ "$APPROVED_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          test "$GITHUB_SHA" = "$APPROVED_OPS_COMMIT"
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.sha }}
+          path: operations
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ inputs.approved_release_commit }}
+          path: release
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22.23.3'
+      - name: Install only the frozen verifier dependencies without hooks
+        working-directory: operations/npm
+        run: npm ci --ignore-scripts --omit=optional --no-audit --no-fund
+      - name: Verify approved bytes and attest metadata only
+        run: node operations/scripts/github-update/sign-catalog.mjs release catalog-output
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: weave-update-catalog-${{ github.run_id }}-${{ github.run_attempt }}
+          path: catalog-output/
+          if-no-files-found: error
+          retention-days: 7

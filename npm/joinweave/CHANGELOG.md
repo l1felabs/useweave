@@ -1,3 +1,8 @@
+## 2026-10-13 — Prepare exact catalog-signing workflow registration
+
+- Copy the reviewed prepared workflow byte-for-byte to its pinned GitHub OIDC identity path, `.github/workflows/release-catalog.yml`, in this local candidate. The job requires exact approved source/operations commits and catalog/manifest hashes; permissions are contents:read and id-token:write, with artifact export only.
+- This local registration candidate has not been pushed or dispatched. It signs approved existing metadata/archives, builds no application and publishes no package or release. Root retains the explicit GitHub-job exception and release operation.
+
 ## 2026-10-13 — Freeze the unsigned 0.2.1 update packet
 
 - Bind the independently reviewed installer source f81b59b to Depot j08rw5z0n2: 96 passing checks, two declared environment-dependent skips, and eleven packed files equal to their Git source bytes. Commit the exact 37,772-byte installer archive, six unchanged 0.2.0 component references, scoped qualification, manifest and unsigned catalog. Preserve the current main branch's published-docs merge.
