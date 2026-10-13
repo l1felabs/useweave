@@ -25,7 +25,9 @@ runtimeApiVersion=2, receiptVersion=0.1.0, requiresStoreMigration=false and
 packages[{name,version,asset,sha256,integrity,bytes}]. Native architecture selection
 uses the current OS/CPU. Availability compares receipt.installerVersion, not
 the native package or service-protocol version; missing/invalid installer
-versions fail closed. Native/MCP component downgrades are refused independently.
+versions fail closed. The installer commits its version only after doctor succeeds;
+an interrupted upgrade retains the completed predecessor version and remains
+eligible for retry. Native/MCP component downgrades are refused independently.
 Preserve exact previously qualified archive bytes.
 
 The Sigstore bundle must carry an in-toto v1 statement with SLSA provenance v1

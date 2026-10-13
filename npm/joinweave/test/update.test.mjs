@@ -72,7 +72,7 @@ test('archive verification binds length and both digests', () => {
 function workspace(t) {
   const home = fs.realpathSync(fs.mkdtempSync(join(tmpdir(), 'weave-update-test-'))); t.after(() => fs.rmSync(home, { recursive: true, force: true }));
   const owner = new Installer({ home, weaveHome: join(home, '.weave'), platform: 'linux', env: {}, run: async () => { throw Error('No process may start'); } });
-  fs.mkdirSync(join(owner.weaveHome, 'bin'), { recursive: true }); fs.writeFileSync(owner.binary, 'owned'); owner.manifest.binary = { version: '0.1.0', packageVersion: '0.2.0', sha256: hash(Buffer.from('owned')) }; owner.saveManifest();
+  fs.mkdirSync(join(owner.weaveHome, 'bin'), { recursive: true }); fs.writeFileSync(owner.binary, 'owned'); owner.manifest.binary = { version: '0.1.0', packageVersion: '0.2.0', sha256: hash(Buffer.from('owned')) }; owner.manifest.installerVersion = '0.2.0'; owner.saveManifest();
   return owner;
 }
 test('check does not mutate receipt, execute commands or create update stage', async t => {

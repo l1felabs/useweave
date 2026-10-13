@@ -26,7 +26,10 @@ const git = (root, ...args) => execFileSync('git', ['-C', root, ...args], { time
 for (const [root, commit] of [[operations, e.APPROVED_OPS_COMMIT], [release, e.APPROVED_RELEASE_COMMIT]]) {
   assert.equal(git(root, 'rev-parse', '--show-toplevel').toString().trim(), root);
   assert.equal(git(root, 'rev-parse', 'HEAD').toString().trim(), commit);
-  assert.equal(git(root, 'status', '--porcelain', '--untracked-files=all').toString().trim(), '');
+  // npm ci creates only verifier dependencies; all tracked input edits still fail.
+  git(root, 'diff', '--exit-code', '--no-ext-diff', 'HEAD', '--');
+  const untracked = git(root, 'ls-files', '--others', '--exclude-standard', '-z').toString().split('\0').filter(Boolean);
+  assert.deepEqual(untracked.filter(path => root !== operations || !path.startsWith('npm/node_modules/')), [], 'Unexpected untracked source input');
   assert.ok(out !== root && !out.startsWith(root + sep));
 }
 function tracked(relative, maximum) {

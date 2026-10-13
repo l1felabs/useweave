@@ -1,6 +1,8 @@
 ## 2026-10-13 — Prepare installer-only GitHub updates
 
 - Compare signed release availability with the managed receipt’s installerVersion; verify each package against its own signed version, filename and lock entry. Reject missing installer versions and independent native/MCP downgrades. This permits a future joinweave 0.2.1 release to retain the six qualified 0.2.0 components without changing their archives or installed MCP tree.
+- Commit installerVersion only after doctor succeeds, retaining the predecessor version across failed/interrupted updates. Exercise failure → available retry → completed/idempotent checks; a fresh incomplete installation has no completed version.
+- Keep catalog signing source checks strict after npm ci: reject all tracked changes and all untracked paths except the operations checkout’s exact npm/node_modules dependency subtree.
 - Add mixed-version, repeated-check, tampered package/lock and downgrade regressions. Prepare an inert catalog-signing workflow and exact immutable-input verifier for review; no workflow registration, signature, publication, new credentials or automatic updater activation. Package versions, dependency lock and existing release archives remain unchanged; fresh Depot qualification and real signed-catalog/managed-update acceptance remain required.
 
 ## 2026-10-13 — Freeze updater dependencies for Depot qualification

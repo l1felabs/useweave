@@ -231,7 +231,7 @@ export class Installer {
     this.binary = join(this.weaveHome, 'bin', 'weave');
     this.manifestPath = join(this.weaveHome, '.joinweave-install.json');
     this.lockPath = join(this.weaveHome, '.joinweave-install.lock');
-    this.manifest = { schema: 1, installer: 'joinweave', version: RECEIPT_VERSION, installerVersion: VERSION, binary: null, service: null, path: null, mcp: {} };
+    this.manifest = { schema: 1, installer: 'joinweave', version: RECEIPT_VERSION, installerVersion: null, binary: null, service: null, path: null, mcp: {} };
     this.warnings = [];
     this.manualMcp = [];
   }
@@ -251,7 +251,6 @@ export class Installer {
 
   saveManifest() {
     this.manifest.version = RECEIPT_VERSION;
-    this.manifest.installerVersion = VERSION;
     const bytes = Buffer.from(`${JSON.stringify(this.manifest, null, 2)}\n`);
     if (bytes.length > 64 * 1024) fail('MANIFEST_TOO_LARGE', 'The native service ownership receipt would exceed 64 KiB. Existing files were preserved.');
     atomicWrite(this.manifestPath, bytes, { previous: readFile(this.manifestPath), durable: true });
@@ -587,6 +586,9 @@ export class Installer {
       // Doctor owns connectivity, peer and announce/find validation. Never turn a failed doctor into success.
       this.stage({ id: 'verify', label: 'Verifying live peer connectivity' });
       const doctor = await this.readyDoctor();
+      // Availability records a completed installation, never an intermediate save.
+      this.manifest.installerVersion = VERSION;
+      this.saveManifest();
       this.progress('Verified Weave connectivity');
       return { ok: true, action: 'install', version: VERSION, binary: this.binary, workspace: this.weaveHome, shared: this.shared, service: { managed: !options.noService, running: true }, pathAdded: Boolean(this.manifest.path), mcpClients: Object.keys(this.manifest.mcp), detectedMcpClients: detected, manualMcpClients: this.manualMcp, mcpClientsNeedingUpdate: Object.entries(this.manifest.mcp).filter(([, receipt]) => receipt.format === 'json'
         ? JSON.stringify(receipt.spec?.args) !== JSON.stringify([this.mcpRuntime.entry])

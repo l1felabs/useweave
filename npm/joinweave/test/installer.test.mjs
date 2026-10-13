@@ -6,7 +6,9 @@ import { join } from 'node:path';
 import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { Installer, parseArgs } from '../src/installer.js';
+import { Installer, parseArgs, VERSION } from '../src/installer.js';
+import { updateWorkspace } from '../src/update.js';
+import { compareVersions } from '../src/github-release.js';
 import { censusTree, ManagedMcp, MCP_VERSION, MCP_INTEGRITY, LEGACY_MCP_VERSION, LEGACY_MCP_INTEGRITY } from '../src/managed-mcp.js';
 
 function fixture(t, { platform = 'linux', response, homeName = 'home with spaces' } = {}) {
@@ -110,10 +112,48 @@ test('doctor failure cannot produce success, and readiness can recover', async (
   const bad = fixture(t, { response: (_, args) => args[0] === 'doctor' ? { code: 1, stdout: '{"ok":false,"peer_count":0}', stderr: '' } : null });
   await assert.rejects(bad.installer().install(headless()), { code: 'NATIVE_COMMAND_FAILED' });
   assert.equal(bad.commands.filter((c) => c.args[0] === 'doctor').length, 10);
+  assert.equal(JSON.parse(fs.readFileSync(bad.installer().manifestPath)).installerVersion, null);
   let attempts = 0;
   const recovering = fixture(t, { response: (_, args) => args[0] === 'doctor' && ++attempts < 2 ? { code: 1, stdout: '{"ok":false}', stderr: '' } : null });
   assert.equal((await recovering.installer().install(headless())).ok, true);
   assert.equal(attempts, 2);
+});
+
+test('failed installer-only upgrade stays available until successful retry passes doctor', async t => {
+  let failing = false;
+  const f = fixture(t, { response: (_, args) => failing && args[0] === 'doctor' ? { code: 1, stdout: '{"ok":false,"peer_count":0}', stderr: '' } : null });
+  await f.installer().install(headless());
+  const owner = f.installer(), receipt = JSON.parse(fs.readFileSync(owner.manifestPath));
+  // Model a completed predecessor with unchanged native/MCP component versions.
+  receipt.installerVersion = '0.1.3'; fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
+  const catalog = { version: VERSION, packages: [
+    { name: `@useweave/cli-linux-${process.arch}`, version: '0.2.0' },
+    { name: '@useweave/mcp', version: '0.2.0' },
+  ] };
+  const seen = [], discover = async current => {
+    seen.push(current);
+    return { catalog, available: compareVersions(VERSION, current) > 0 };
+  };
+  failing = true;
+  await assert.rejects(f.installer().install(headless()), { code: 'NATIVE_COMMAND_FAILED' });
+  const interrupted = JSON.parse(fs.readFileSync(owner.manifestPath));
+  assert.equal(interrupted.installerVersion, '0.1.3');
+  assert.deepEqual(interrupted.binary, receipt.binary);
+  assert.deepEqual(interrupted.mcpRuntime, receipt.mcpRuntime);
+  assert.equal((await updateWorkspace(f.installer(), parseArgs(['update', '--check']), { discover })).available, true);
+  failing = false;
+  assert.equal((await f.installer().install(headless())).ok, true);
+  const completed = fs.readFileSync(owner.manifestPath);
+  assert.equal(JSON.parse(completed).installerVersion, VERSION);
+  const commands = f.commands.length;
+  for (let n = 0; n < 2; n++) {
+    const result = await updateWorkspace(f.installer(), parseArgs(['update', '--yes', '--json']), { discover });
+    assert.equal(result.available, false); assert.equal(result.applied, false);
+  }
+  assert.deepEqual(seen, ['0.1.3', VERSION, VERSION]);
+  assert.equal(f.commands.length, commands);
+  assert.deepEqual(fs.readFileSync(owner.manifestPath), completed);
+  assert.equal(fs.existsSync(join(owner.weaveHome, 'updates')), false);
 });
 
 test('malformed or conflicting client configs are preserved', async (t) => {
