@@ -1,3 +1,8 @@
+## 2026-10-13 — Freeze the unsigned 0.2.1 update packet
+
+- Bind the independently reviewed installer source f81b59b to Depot j08rw5z0n2: 96 passing checks, two declared environment-dependent skips, and eleven packed files equal to their Git source bytes. Commit the exact 37,772-byte installer archive, six unchanged 0.2.0 component references, scoped qualification, manifest and unsigned catalog. Preserve the current main branch's published-docs merge.
+- This packet is not signed or published. Genuine signature checks and actual managed-update acceptance remain required before release; the candidate installs no scheduler and claims no automatic rollback.
+
 ## 0.2.1 — Prepared installer-only GitHub updater (2026-10-13)
 
 - Version the installer, lock metadata, terminal follow-up commands and packed guide at 0.2.1. Keep the native distributions, CLI and MCP at their six exact qualified 0.2.0 archives; native service protocol remains 0.1.0/API2.

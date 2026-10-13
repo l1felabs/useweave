@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "source": "f81b59b102a3b50bb89d81c2b4a50ef87f31b586",
+  "nativeSource": "ff621341f0e199d037dc330aa803897011ad8b8f",
+  "depotBuild": "j08rw5z0n2",
+  "depotUrl": "https://depot.dev/orgs/kb9w1fwwjt/projects/67m5m8tkxf/builds/j08rw5z0n2",
+  "finishedAtUtc": "2026-10-13T09:13:39.943260+00:00",
+  "exit": 0,
+  "passed": 96,
+  "skipped": 2,
+  "failed": 0,
+  "skippedScope": [
+    "systemd unit parser requires real systemd environment",
+    "real published MCP install requires integration fixture"
+  ],
+  "testLogSha256": "598ae2f736d43cc493b01f0688159d3bfcc5f454ca6463c7d68ab41ecad2ed40",
+  "lockSha256": "e86f126d51d4e838e53ccaa2ebf366222f143e90e6bc8498cf6e11aa37aaaf9d",
+  "archiveSha256": "a4c858e3257cb79cbbf15ae076c7d4d18b8e1593d11839a7da1565b3282a5141",
+  "archiveIntegrity": "sha512-bnpuEU8MdAahW2GFXHstRlYyYgjMTWAHAjy6IXzsDELQHXJGnsSZDLUZjkJ+GZpKfN1B1+Bo4aiOulydyMMPmg==",
+  "archiveBytes": 37772,
+  "archiveSourceFileCount": 11,
+  "archiveSourceByteParity": true,
+  "sixExistingComponentsReusedExactly": true,
+  "independentSourceReview": "upgrade_review cleared f81b59b by inspection before this Depot run",
+  "scope": "workspace unit/fixture qualification, signer syntax check and exact installer-only npm pack/source parity; no genuine catalog signature, real managed update acceptance or publication",
+  "published": false,
+  "automaticUpdates": false
+}

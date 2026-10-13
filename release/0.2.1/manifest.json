@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "release": "0.2.1",
+  "package_source_commit": "f81b59b102a3b50bb89d81c2b4a50ef87f31b586",
+  "native_source_commit": "ff621341f0e199d037dc330aa803897011ad8b8f",
+  "packages": [
+    {
+      "name": "@useweave/cli-darwin-arm64",
+      "version": "0.2.0",
+      "archive": "release/0.2.0/npm/useweave-cli-darwin-arm64-0.2.0.tgz",
+      "sha256": "f6c5b612c60519d191730bd95b959ab740a72f3ef4e7b1198c2561f28f6ba280",
+      "integrity": "sha512-bOXVNNhymKcEUV+D8QAnU8MYmilyhggTfmDJ+AdJmzvyn5bKEriQhKpDyUchiZESDNFnwhfCzdtUs2kkmjlFhA==",
+      "bytes": 9866331,
+      "qualification": {
+        "path": "release/0.2.0/qualification/cli-darwin-arm64.json",
+        "sha256": "48f259c9a857cdf4591e47b367fd5e90653bc200628eb10fd71b89ecdc05b9e5"
+      }
+    },
+    {
+      "name": "@useweave/cli-darwin-x64",
+      "version": "0.2.0",
+      "archive": "release/0.2.0/npm/useweave-cli-darwin-x64-0.2.0.tgz",
+      "sha256": "058fed09137b34d61db89cb79644e5ebaba0fe2800c6b0f280a1ae8f22c0e780",
+      "integrity": "sha512-McnUNdnXWeyM9RM6U0+lm4w7BFC1aljg03Z8v5Ok+gXv3y7T+EMdGMJ3Xj9Etcz/ZVboYpHOOeI3ZIr+vRDODA==",
+      "bytes": 10391868,
+      "qualification": {
+        "path": "release/0.2.0/qualification/cli-darwin-x64.json",
+        "sha256": "98d0124eaf1c2b35d00533ba44c88081c46649805dc1332c02ef974994d73851"
+      }
+    },
+    {
+      "name": "@useweave/cli-linux-arm64",
+      "version": "0.2.0",
+      "archive": "release/0.2.0/npm/useweave-cli-linux-arm64-0.2.0.tgz",
+      "sha256": "8aea47f490fa5e3967de16dbc55efe19933801bf8c8aa3cce62c267659ea623b",
+      "integrity": "sha512-+aM9K/975aLT7k1xVEF5AE/VuS+Kgn/KPcURfl/FtMI6jDgF3G/yN/AqSp0oauUXyv8UtxY/ukhLibpTmiRMKA==",
+      "bytes": 11897984,
+      "qualification": {
+        "path": "release/0.2.0/qualification/cli-linux-arm64.json",
+        "sha256": "d189eace46dd02386e2b4d39e4d7e5df546ac6c96dff5dedba6cb92183c6be1a"
+      }
+    },
+    {
+      "name": "@useweave/cli-linux-x64",
+      "version": "0.2.0",
+      "archive": "release/0.2.0/npm/useweave-cli-linux-x64-0.2.0.tgz",
+      "sha256": "c763082b2f30c2ad6a5ea72351eb9ff0a32b1948448613411ab5ef9142a51de3",
+      "integrity": "sha512-ZXFD/sdnKnf9M/gN1mkxAP14l47QABYfwbvlIm77UWTWGAxa8RaptkFS5+AYfF5CenpPnKBv/7I/AsQSF+EBtg==",
+      "bytes": 12009490,
+      "qualification": {
+        "path": "release/0.2.0/qualification/cli-linux-x64.json",
+        "sha256": "22eb4ada62a11a5af1934cec8d915431ce766d15a47c36375bfd4d0fb7defa7c"
+      }
+    },
+    {
+      "name": "@useweave/cli",
+      "version": "0.2.0",
+      "archive": "release/0.2.0/npm/useweave-cli-0.2.0.tgz",
+      "sha256": "18f06a6e19a0c789b42eabb814005a3aa8ab394e9815169319c1b3545c0134b0",
+      "integrity": "sha512-FbQ/Mu4wcWhFRC3GooRxe9CjAPiais4k2dG0nNctcMYpnupLzNL1bqJqD7/lsE5D34KgLL68+OXb975BvVmfjQ==",
+      "bytes": 6541
+    },
+    {
+      "name": "@useweave/mcp",
+      "version": "0.2.0",
+      "archive": "release/0.2.0/npm/useweave-mcp-0.2.0.tgz",
+      "sha256": "4c57c61b6c1aa40bd8ab6b955b0d009b009b28038034c3eb0c0e2b339eab8a25",
+      "integrity": "sha512-PE+rrlbBwJEgnMeieVoujnE882bdm4J5sIjjBXQGPYPVU100s78RxaiFzBx/nrsoK7fx/gHCv36Wt6ho0u5oGA==",
+      "bytes": 17320
+    },
+    {
+      "name": "joinweave",
+      "version": "0.2.1",
+      "archive": "release/0.2.1/npm/joinweave-0.2.1.tgz",
+      "sha256": "a4c858e3257cb79cbbf15ae076c7d4d18b8e1593d11839a7da1565b3282a5141",
+      "integrity": "sha512-bnpuEU8MdAahW2GFXHstRlYyYgjMTWAHAjy6IXzsDELQHXJGnsSZDLUZjkJ+GZpKfN1B1+Bo4aiOulydyMMPmg==",
+      "bytes": 37772,
+      "qualification": {
+        "path": "release/0.2.1/qualification/joinweave.json",
+        "sha256": "34d8f19235fdfcfd425f3e646b9bc4aaee61b75a1b42cfc8d1c158392a779c6c"
+      }
+    }
+  ]
+}
