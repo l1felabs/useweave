@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { Installer, runCommand } from '../src/installer.js';
-import { censusTree, MCP_INTEGRITY, resolveNpmCli, verifyMcpTree } from '../src/managed-mcp.js';
+import { censusTree, MCP_VERSION, MCP_INTEGRITY, resolveNpmCli, verifyMcpTree } from '../src/managed-mcp.js';
 
 function scratch(t) {
   const root = fs.realpathSync(fs.mkdtempSync(join(tmpdir(), 'joinweave-mcp-')));
@@ -16,8 +16,8 @@ function scratch(t) {
 function tree(root) {
   fs.mkdirSync(join(root, 'node_modules/@useweave/mcp/bin'), { recursive: true });
   fs.writeFileSync(join(root, 'node_modules/@useweave/mcp/bin/weave-mcp.js'), '// fixture');
-  fs.writeFileSync(join(root, 'node_modules/@useweave/mcp/package.json'), JSON.stringify({ name: '@useweave/mcp', version: '0.1.0', bin: { 'weave-mcp': 'bin/weave-mcp.js' } }));
-  const lock = { lockfileVersion: 3, packages: { '': {}, 'node_modules/@useweave/mcp': { version: '0.1.0', resolved: 'https://registry.npmjs.org/@useweave/mcp/-/mcp-0.1.0.tgz', integrity: MCP_INTEGRITY } } };
+  fs.writeFileSync(join(root, 'node_modules/@useweave/mcp/package.json'), JSON.stringify({ name: '@useweave/mcp', version: MCP_VERSION, bin: { 'weave-mcp': 'bin/weave-mcp.js' } }));
+  const lock = { lockfileVersion: 3, packages: { '': {}, 'node_modules/@useweave/mcp': { version: MCP_VERSION, resolved: `https://registry.npmjs.org/@useweave/mcp/-/mcp-${MCP_VERSION}.tgz`, integrity: MCP_INTEGRITY } } };
   fs.writeFileSync(join(root, 'package-lock.json'), JSON.stringify(lock));
   return lock;
 }
@@ -61,7 +61,7 @@ test('abort cancels an actual child command rather than leaving an installer sub
 
 // Depot enables this bounded real package/stdio qualification. It never installs a
 // native service, edits an agent client, or touches the operator's home.
-test('published MCP installs atomically and serves ten real stdio tools from its persistent tree', { skip: process.env.WEAVE_VERIFY_MCP_INSTALL !== '1', timeout: 210_000 }, async (t) => {
+test('published MCP installs atomically and serves 46 real stdio tools from its persistent tree', { skip: process.env.WEAVE_VERIFY_MCP_INSTALL !== '1', timeout: 210_000 }, async (t) => {
   const home = scratch(t), owner = new Installer({ home, weaveHome: join(home, '.weave'), run: runCommand });
   fs.mkdirSync(owner.weaveHome);
   await owner.mcpRuntime.install();
@@ -98,13 +98,15 @@ test('published MCP installs atomically and serves ten real stdio tools from its
     child.stdout.on('data', receive); child.once('exit', exited);
   });
   const initialized = response(1);
-  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'joinweave-qualification', version: '0.1.2' } } }) + '\n');
-  assert.equal((await initialized).error, undefined);
+  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'joinweave-qualification', version: MCP_VERSION } } }) + '\n');
+  const hello = await initialized;
+  assert.equal(hello.error, undefined);
+  assert.equal(hello.result.serverInfo.version, MCP_VERSION);
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
   const listed = response(2);
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
   const tools = (await listed).result.tools;
-  assert.equal(tools.length, 10);
+  assert.equal(tools.length, 46);
   assert.ok(tools.some((tool) => tool.name === 'weave_status'));
   child.stdin.end();
   await new Promise((done) => { if (child.exitCode !== null) done(); else child.once('exit', done); });

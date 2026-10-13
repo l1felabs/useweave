@@ -9,7 +9,7 @@ function fixture(t, changes = {}) {
   const root = mkdtempSync(join(tmpdir(), 'weave-resolver-test-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, 'bin'));
-  writeFileSync(join(root, 'package.json'), JSON.stringify({ name: '@useweave/cli-linux-x64', version: '0.1.0', os: ['linux'], cpu: ['x64'], ...changes }));
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ name: '@useweave/cli-linux-x64', version: '0.2.0', os: ['linux'], cpu: ['x64'], ...changes }));
   writeFileSync(join(root, 'bin/weave'), '#!/bin/sh\nexit 0\n');
   chmodSync(join(root, 'bin/weave'), 0o755);
   return { root, options: { platform: 'linux', arch: 'x64', resolve: () => join(root, 'package.json') } };
@@ -18,7 +18,7 @@ function fixture(t, changes = {}) {
 test('resolves matching package and rejects a different release', (t) => {
   const a = fixture(t);
   assert.equal(resolveBinary(a.options), join(a.root, 'bin/weave'));
-  const b = fixture(t, { version: '0.2.0' });
+  const b = fixture(t, { version: '0.1.0' });
   assert.throws(() => resolveBinary(b.options), { code: 'BINARY_VERSION_MISMATCH' });
 });
 test('unsupported platforms never attempt dependency resolution', () => {

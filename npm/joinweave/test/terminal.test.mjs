@@ -94,13 +94,19 @@ test('NO_COLOR disables color, narrow resize never wraps generated lines, and la
 
 test('summary reflects actual installed/skipped components and consent rather than promising desktop or registration', () => {
   const text = installationSummary({ binary: '/a b/weave', workspace: '/a b/.weave', shared: '/a b/Weave', pathAdded: false, mcpClients: [], components: [
-    { id: 'runtime', name: 'Native CLI', version: '0.1.0', status: 'installed' },
+    { id: 'runtime', name: 'Native CLI', version: '0.2.0', status: 'installed' },
     { id: 'node', name: 'Peer node', status: 'running', managed: false },
-    { id: 'mcp', name: 'Agent MCP server', version: '0.1.0', status: 'skipped' },
+    { id: 'mcp', name: 'Agent MCP server', version: '0.2.0', status: 'skipped' },
   ] });
-  assert.ok(text.includes('Agent MCP server 0.1.0  /  skipped'));
+  assert.ok(text.includes('Agent MCP server 0.2.0  /  skipped'));
   assert.ok(text.includes('none configured; consent is required'));
   assert.ok(text.includes("'/a b/weave' node status --json"));
   assert.ok(text.includes('(detached)'));
   assert.ok(text.includes('No account or desktop app was installed.'));
+});
+
+test('upgrade summary names only retained clients requiring explicit migration consent', () => {
+  const text = installationSummary({ binary: '/a/weave', workspace: '/a/.weave', shared: '/a/Weave', pathAdded: true, mcpClients: ['cursor', 'codex'], mcpClientsNeedingUpdate: ['cursor'], components: [] });
+  assert.ok(text.includes('npx joinweave@0.2.0 --yes --mcp-client cursor'));
+  assert.equal(text.includes('--mcp-client cursor,codex'), false);
 });

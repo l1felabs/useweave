@@ -3,11 +3,12 @@ import { homedir, hostname } from 'node:os';
 import { resolve, join, dirname, basename, isAbsolute, parse } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { ManagedMcp } from './managed-mcp.js';
+import { ManagedMcp, MCP_VERSION } from './managed-mcp.js';
 
-export const VERSION = '0.1.3';
-const NATIVE_PACKAGE_VERSION = '0.1.0';
-// Published native0.1.0 treats this as its service-ownership protocol version.
+export const VERSION = '0.2.0';
+const NATIVE_PACKAGE_VERSION = '0.2.0';
+const NATIVE_VERSION = '0.1.0';
+// Service ownership protocol is independent of npm/runtime capability versions.
 const RECEIPT_VERSION = '0.1.0';
 const PATH_BEGIN = '# >>> joinweave managed PATH >>>';
 const PATH_END = '# <<< joinweave managed PATH <<<' ;
@@ -88,7 +89,7 @@ function readFile(path) {
 }
 
 /** Atomic, compare-before-replace edit. Backups stay beside edited app files. */
-function atomicWrite(path, bytes, { previous = null, mode = 0o600, backup = false } = {}) {
+function atomicWrite(path, bytes, { previous = null, mode = 0o600, backup = false, durable = false } = {}) {
   assertSafePath(path);
   ensureDirectory(dirname(path));
   const current = readFile(path);
@@ -104,7 +105,14 @@ function atomicWrite(path, bytes, { previous = null, mode = 0o600, backup = fals
     const latest = readFile(path);
     if ((latest === null) !== (previous === null) || (latest && !latest.equals(previous))) fail('CONCURRENT_EDIT', `Refusing to replace a concurrently edited file: ${path}.`);
     fs.renameSync(temporary, path);
+    if (durable) syncDirectory(dirname(path));
   } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
+}
+
+function syncDirectory(path) {
+  assertSafePath(path);
+  const fd = fs.openSync(path, fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW);
+  try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
 }
 
 function unlinkIfUnchanged(path, expectedHash) {
@@ -238,7 +246,7 @@ export class Installer {
     this.manifest.installerVersion = VERSION;
     const bytes = Buffer.from(`${JSON.stringify(this.manifest, null, 2)}\n`);
     if (bytes.length > 64 * 1024) fail('MANIFEST_TOO_LARGE', 'The native service ownership receipt would exceed 64 KiB. Existing files were preserved.');
-    atomicWrite(this.manifestPath, bytes, { previous: readFile(this.manifestPath) });
+    atomicWrite(this.manifestPath, bytes, { previous: readFile(this.manifestPath), durable: true });
   }
 
   lock() {
@@ -285,15 +293,51 @@ export class Installer {
     }
   }
 
-  installBinary() {
+  recoverBinaryUpgrade(expectedSha256) {
+    const pending = this.manifest.binaryUpgrade;
+    if (pending === undefined) return;
+    if (!regular(pending) || Object.keys(pending).sort().join(',') !== 'fromSha256,packageVersion,toSha256'
+      || !/^[a-f0-9]{64}$/.test(pending.fromSha256 || '') || pending.fromSha256 !== this.manifest.binary?.sha256
+      || !/^[a-f0-9]{64}$/.test(pending.toSha256 || '') || (expectedSha256 !== undefined && pending.toSha256 !== expectedSha256)
+      || pending.packageVersion !== NATIVE_PACKAGE_VERSION || this.manifest.service) {
+      fail('INVALID_MANIFEST', 'The pending binary upgrade is not recognized for this package. Existing files were preserved.');
+    }
+    const current = readFile(this.binary), sha256 = current && digest(current);
+    if (sha256 === pending.toSha256) {
+      // Recover only bytes bound by the durable old/new ownership journal.
+      // The normal install additionally binds its new hash to the source package.
+      syncDirectory(dirname(this.binary));
+      this.manifest.binary = { sha256, version: NATIVE_VERSION, packageVersion: NATIVE_PACKAGE_VERSION };
+    } else if (sha256 !== pending.fromSha256) {
+      fail('UNMANAGED_BINARY', 'The interrupted binary upgrade contains missing or modified bytes. They were preserved.');
+    }
+    delete this.manifest.binaryUpgrade;
+    this.saveManifest();
+  }
+
+  async installBinary() {
     const source = this.resolveNative();
     const stat = fs.lstatSync(source);
     if (!stat.isFile() || stat.isSymbolicLink()) fail('INVALID_BINARY', 'Native package executable must be a regular file.');
-    const bytes = fs.readFileSync(source), sha256 = digest(bytes), old = readFile(this.binary);
+    const bytes = fs.readFileSync(source), sha256 = digest(bytes);
+    this.recoverBinaryUpgrade(sha256);
+    const old = readFile(this.binary);
     if (old && (!this.manifest.binary || digest(old) !== this.manifest.binary.sha256)) fail('UNMANAGED_BINARY', `An unrelated or modified executable exists at ${this.binary}. It will not be replaced.`);
-    if (!old || digest(old) !== sha256) atomicWrite(this.binary, bytes, { previous: old, mode: 0o755 });
+    if (old && ((this.manifest.binary.packageVersion ?? this.manifest.binary.version) !== NATIVE_PACKAGE_VERSION || digest(old) !== sha256)) {
+      // Stop the owned old process using its original executable and receipt.
+      // Otherwise detached start can reuse an API1 daemon after an API2 upgrade.
+      if (this.manifest.service) {
+        await this.removeService();
+        if (this.manifest.service) fail('MODIFIED_SERVICE', 'The modified service was preserved. Stop and remove it before upgrading the binary.');
+      }
+      await this.native(['node', 'stop', '--json'], 'Node shutdown before runtime upgrade');
+      this.manifest.binaryUpgrade = { fromSha256: digest(old), toSha256: sha256, packageVersion: NATIVE_PACKAGE_VERSION };
+      this.saveManifest();
+    }
+    if (!old || digest(old) !== sha256) atomicWrite(this.binary, bytes, { previous: old, mode: 0o755, durable: true });
     fs.chmodSync(this.binary, 0o755);
-    this.manifest.binary = { sha256, version: NATIVE_PACKAGE_VERSION };
+    this.manifest.binary = { sha256, version: NATIVE_VERSION, packageVersion: NATIVE_PACKAGE_VERSION };
+    delete this.manifest.binaryUpgrade;
     this.saveManifest();
     this.progress('Installed Weave');
   }
@@ -434,7 +478,7 @@ export class Installer {
       if (JSON.stringify(spec) === JSON.stringify(this.legacyMcpDefinition())) return true;
       return regular(spec) && Object.keys(spec).sort().join(',') === 'args,command,env'
         && typeof spec.command === 'string' && isAbsolute(spec.command) && ['node', 'nodejs'].includes(basename(spec.command)) && !/[\x00-\x1f\x7f]/.test(spec.command)
-        && JSON.stringify(spec.args) === JSON.stringify([this.mcpRuntime.entry])
+        && this.mcpRuntime.managedEntries().some((entry) => JSON.stringify(spec.args) === JSON.stringify([entry]))
         && JSON.stringify(spec.env) === JSON.stringify({ WEAVE_HOME: this.weaveHome, WEAVE_BINARY: this.binary });
     }
     if (receipt.format !== 'toml' || typeof receipt.block !== 'string') return false;
@@ -445,7 +489,7 @@ export class Installer {
     if (!line) return false;
     let command; try { command = JSON.parse(line[1]); } catch { return false; }
     return typeof command === 'string' && isAbsolute(command) && ['node', 'nodejs'].includes(basename(command)) && !/[\x00-\x1f\x7f]/.test(command)
-      && receipt.block === this.mcpTomlBlock({ ...this.mcpDefinition(), command });
+      && this.mcpRuntime.managedEntries().some((entry) => receipt.block === this.mcpTomlBlock({ ...this.mcpDefinition(), command, args: [entry] }));
   }
 
   installMcp(client) {
@@ -493,7 +537,7 @@ export class Installer {
       this.loadManifest();
       this.mcpRuntime.migrateLegacyReceipt();
       this.stage({ id: 'runtime', label: 'Installing the native runtime' });
-      this.installBinary();
+      await this.installBinary();
       ensureDirectory(this.shared, 0o755);
       this.stage({ id: 'identity', label: 'Opening your workspace and local identity' });
       const initialized = await this.native(['init', '--json'], 'Workspace initialization');
@@ -527,12 +571,14 @@ export class Installer {
       this.stage({ id: 'verify', label: 'Verifying live peer connectivity' });
       const doctor = await this.readyDoctor();
       this.progress('Verified Weave connectivity');
-      return { ok: true, action: 'install', version: VERSION, binary: this.binary, workspace: this.weaveHome, shared: this.shared, service: { managed: !options.noService, running: true }, pathAdded: Boolean(this.manifest.path), mcpClients: Object.keys(this.manifest.mcp), detectedMcpClients: detected, manualMcpClients: this.manualMcp, doctor, components: [
+      return { ok: true, action: 'install', version: VERSION, binary: this.binary, workspace: this.weaveHome, shared: this.shared, service: { managed: !options.noService, running: true }, pathAdded: Boolean(this.manifest.path), mcpClients: Object.keys(this.manifest.mcp), detectedMcpClients: detected, manualMcpClients: this.manualMcp, mcpClientsNeedingUpdate: Object.entries(this.manifest.mcp).filter(([, receipt]) => receipt.format === 'json'
+        ? JSON.stringify(receipt.spec?.args) !== JSON.stringify([this.mcpRuntime.entry])
+        : !receipt.block?.includes(`\nargs = [${JSON.stringify(this.mcpRuntime.entry)}]\n`)).map(([client]) => client), doctor, components: [
         { id: 'runtime', name: 'Native CLI', version: NATIVE_PACKAGE_VERSION, status: 'installed', path: this.binary },
         { id: 'identity', name: 'Local identity', status: 'ready', localOnly: true },
         { id: 'node', name: 'Peer node', status: 'running', managed: !options.noService },
         { id: 'workspace', name: 'Workspace', status: 'ready', path: this.shared },
-        { id: 'mcp', name: 'Agent MCP server', version: NATIVE_PACKAGE_VERSION, status: options.noMcp ? 'skipped' : 'installed', ...(options.noMcp ? {} : { command: this.nodePath, entry: this.mcpRuntime.entry }) },
+        { id: 'mcp', name: 'Agent MCP server', version: MCP_VERSION, status: options.noMcp ? 'skipped' : 'installed', ...(options.noMcp ? {} : { command: this.nodePath, entry: this.mcpRuntime.entry }) },
       ], initialization: initialized, next: this.manifest.path ? 'weave doctor' : `${this.binary} doctor` };
     } finally { this.unlock(); }
   }
@@ -545,7 +591,8 @@ export class Installer {
     const bytes = readFile(expected);
     if (bytes && digest(bytes) !== receipt.sha256) { this.warnings.push('Preserved modified service configuration.'); return; }
     await this.stopService();
-    unlinkIfUnchanged(expected, receipt.sha256);
+    if (!unlinkIfUnchanged(expected, receipt.sha256)) fail('CONCURRENT_EDIT', 'The service definition changed during shutdown. Its ownership and executable were preserved.');
+    if (bytes) syncDirectory(dirname(expected));
     if (this.platform === 'linux') await this.serviceCommand(['--user', 'daemon-reload'], false);
     this.manifest.service = null;
     this.saveManifest();
@@ -605,6 +652,7 @@ export class Installer {
     try {
       this.loadManifest();
       this.mcpRuntime.migrateLegacyReceipt();
+      this.recoverBinaryUpgrade();
       const known = readFile(this.manifestPath);
       if (!known) fail('NO_INSTALL_RECEIPT', 'No joinweave installation receipt exists. Existing files will not be removed.');
       this.stage({ id: 'node', label: 'Stopping the owned background node' });

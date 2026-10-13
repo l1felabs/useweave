@@ -7,7 +7,7 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { Installer, parseArgs } from '../src/installer.js';
-import { censusTree, MCP_INTEGRITY } from '../src/managed-mcp.js';
+import { censusTree, ManagedMcp, MCP_VERSION, MCP_INTEGRITY, LEGACY_MCP_VERSION, LEGACY_MCP_INTEGRITY } from '../src/managed-mcp.js';
 
 function fixture(t, { platform = 'linux', response, homeName = 'home with spaces' } = {}) {
   const scratch = fs.realpathSync(fs.mkdtempSync(join(tmpdir(), 'joinweave-test-')));
@@ -21,10 +21,12 @@ function fixture(t, { platform = 'linux', response, homeName = 'home with spaces
     if (response) { const value = await response(command, args, options); if (value) return value; }
     if (args[1] === 'install' && args.includes('--prefix')) {
       const stage = args[args.indexOf('--prefix') + 1];
+      const version = JSON.parse(fs.readFileSync(join(stage, 'package.json'))).dependencies['@useweave/mcp'];
+      const integrity = version === LEGACY_MCP_VERSION ? LEGACY_MCP_INTEGRITY : MCP_INTEGRITY;
       fs.mkdirSync(join(stage, 'node_modules/@useweave/mcp/bin'), { recursive: true });
-      fs.writeFileSync(join(stage, 'node_modules/@useweave/mcp/package.json'), JSON.stringify({ name: '@useweave/mcp', version: '0.1.0', bin: { 'weave-mcp': 'bin/weave-mcp.js' } }));
+      fs.writeFileSync(join(stage, 'node_modules/@useweave/mcp/package.json'), JSON.stringify({ name: '@useweave/mcp', version, bin: { 'weave-mcp': 'bin/weave-mcp.js' } }));
       fs.writeFileSync(join(stage, 'node_modules/@useweave/mcp/bin/weave-mcp.js'), '// fixture MCP entry\n');
-      fs.writeFileSync(join(stage, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: { '': {}, 'node_modules/@useweave/mcp': { version: '0.1.0', resolved: 'https://registry.npmjs.org/@useweave/mcp/-/mcp-0.1.0.tgz', integrity: MCP_INTEGRITY } } }));
+      fs.writeFileSync(join(stage, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: { '': {}, 'node_modules/@useweave/mcp': { version, resolved: `https://registry.npmjs.org/@useweave/mcp/-/mcp-${version}.tgz`, integrity } } }));
     }
     if (command === 'systemctl' && args.includes('is-active')) return { code: 3, stdout: '', stderr: '' };
     if (command === 'launchctl' && args[0] === 'print') return { code: 113, stdout: '', stderr: 'Bad request.\nCould not find service "com.useweave.node" in domain for user gui: 501\n' };
@@ -63,7 +65,7 @@ test('explicit consent merges MCP and PATH; uninstall removes only owned entries
   assert.equal(merged.userPreference, 'keep');
   assert.equal(merged.mcpServers.other.command, 'existing');
   assert.equal(merged.mcpServers.weave.command, process.execPath);
-  assert.deepEqual(merged.mcpServers.weave.args, [join(installed.workspace, 'tools/mcp-0.1.0/node_modules/@useweave/mcp/bin/weave-mcp.js')]);
+  assert.deepEqual(merged.mcpServers.weave.args, [join(installed.workspace, 'tools/mcp-0.2.0/node_modules/@useweave/mcp/bin/weave-mcp.js')]);
   assert.equal(merged.mcpServers.weave.env.WEAVE_BINARY, installed.binary);
   fs.writeFileSync(join(installed.workspace, 'identity-test'), 'retain');
   fs.writeFileSync(join(installed.shared, 'shared-strand'), 'retain');
@@ -184,8 +186,9 @@ test('launchd teardown waits for deregistration before removing managed files', 
   installed = await f.installer().install(parseArgs(['--yes']));
   const receipt = JSON.parse(fs.readFileSync(join(installed.workspace, '.joinweave-install.json'), 'utf8'));
   assert.equal(receipt.version, '0.1.0');
-  assert.equal(receipt.installerVersion, '0.1.3');
+  assert.equal(receipt.installerVersion, '0.2.0');
   assert.equal(receipt.binary.version, '0.1.0');
+  assert.equal(receipt.binary.packageVersion, '0.2.0');
   definition = receipt.service.path;
   const retained = join(installed.workspace, 'retained-strand');
   fs.writeFileSync(retained, 'keep');
@@ -396,7 +399,7 @@ test('persistent MCP is staged once, pinned, script-free, and retained on modifi
 test('npm failure never promotes a partial MCP runtime or reports ready', async (t) => {
   const f = fixture(t, { response: (_, args) => args[1] === 'install' ? { code: 1, stdout: '', stderr: 'failure' } : null });
   await assert.rejects(f.installer().install(headless()), { code: 'MCP_INSTALL_FAILED' });
-  assert.equal(fs.existsSync(join(f.home, '.weave/tools/mcp-0.1.0')), false);
+  assert.equal(fs.existsSync(join(f.home, '.weave/tools/mcp-0.2.0')), false);
   assert.deepEqual(fs.readdirSync(join(f.home, '.weave/tools')), []);
   assert.equal(fs.existsSync(join(f.home, '.weave/bin/weave')), true);
   assert.equal(f.commands.some((c) => c.args[0] === 'doctor'), false);
@@ -439,7 +442,7 @@ test('explicit consent migrates owned legacy MCP definitions; headless does not'
 test('runtime census rejects foreign trees, added files and symlinks without deleting them', async (t) => {
   const f = fixture(t);
   await f.installer().install(headless());
-  const runtime = join(f.home, '.weave/tools/mcp-0.1.0');
+  const runtime = join(f.home, '.weave/tools/mcp-0.2.0');
   fs.writeFileSync(join(runtime, 'unrelated'), 'preserve');
   await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_RUNTIME' });
   const removed = await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
@@ -525,8 +528,8 @@ test('readiness cancellation does not sleep or retry after an interrupted native
 });
 
 
-function legacyLargeReceipt(f) {
-  const owner = f.installer(), runtime = owner.mcpRuntime.path;
+function legacyLargeReceipt(f, owner = f.installer()) {
+  const runtime = owner.mcpRuntime.path;
   // A real dependency tree has enough file ownership records to exceed the
   // native parser limit. This deterministic fixture exercises that same shape.
   const bulk = join(runtime, 'fixture-module');
@@ -558,6 +561,7 @@ test('0.1.2 oversized MCP receipt migrates before native ownership validation an
   assert.ok(fs.statSync(old.owner.manifestPath).size < 64 * 1024);
   assert.equal(compact.version, '0.1.0');
   assert.equal(compact.binary.version, '0.1.0');
+  assert.equal(compact.binary.packageVersion, '0.2.0');
   assert.equal(fs.statSync(old.owner.mcpRuntime.censusPath).mode & 0o777, 0o600);
   assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
   assert.equal(fs.existsSync(old.runtime), false);
@@ -626,4 +630,258 @@ test('removal journal never substitutes for missing or modified census beside a 
     assert.equal(fs.existsSync(owner.mcpRuntime.entry), true);
     assert.equal(JSON.parse(fs.readFileSync(owner.manifestPath)).mcpRuntime.removing, true);
   }
+});
+
+// Construct the published 0.1.3 ownership shape with its actual 0.1.0 MCP pin.
+// No installed client or operator workspace is used by these isolated fixtures.
+async function installLegacy(f, clients = [], { service = false } = {}) {
+  const owner = f.installer();
+  owner.mcpRuntime = new ManagedMcp(owner, { version: LEGACY_MCP_VERSION });
+  await owner.install(parseArgs(['--yes', ...(service ? [] : ['--no-service']), ...clients.flatMap((client) => ['--mcp-client', client])]));
+  const receipt = JSON.parse(fs.readFileSync(owner.manifestPath));
+  receipt.installerVersion = '0.1.3';
+  receipt.binary.version = '0.1.0';
+  delete receipt.binary.packageVersion;
+  fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt, null, 2) + '\n');
+  // The new package has different executable bytes, while Rust --version may
+  // remain 0.1.0. Upgrade ownership must rely on the package pin and exact hash.
+  fs.writeFileSync(f.source, '#!/bin/sh\n# API2 fixture\nexit 0\n');
+  return owner;
+}
+
+test('0.1.3 upgrade retains identity, data, old MCP and unconsented JSON/TOML clients', async (t) => {
+  const f = fixture(t), old = await installLegacy(f, ['cursor', 'codex']);
+  const identity = join(old.weaveHome, 'identity-fixture'), data = join(old.weaveHome, 'strand-fixture');
+  fs.writeFileSync(identity, 'private identity fixture', { mode: 0o600 });
+  fs.writeFileSync(data, 'retained strand fixture');
+  const clients = ['cursor', 'codex'].map((client) => old.clientDefinition(client).path);
+  const before = clients.map((path) => fs.readFileSync(path));
+  const oldFiles = censusTree(old.mcpRuntime.path), oldCensus = fs.readFileSync(old.mcpRuntime.censusPath);
+  const commandStart = f.commands.length;
+  const result = await f.installer().install(headless());
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.mcpClientsNeedingUpdate.sort(), ['codex', 'cursor']);
+  clients.forEach((path, i) => assert.deepEqual(fs.readFileSync(path), before[i]));
+  assert.deepEqual(censusTree(old.mcpRuntime.path), oldFiles);
+  assert.deepEqual(fs.readFileSync(old.mcpRuntime.censusPath), oldCensus);
+  assert.equal(fs.readFileSync(identity, 'utf8'), 'private identity fixture');
+  assert.equal(fs.statSync(identity).mode & 0o777, 0o600);
+  assert.equal(fs.readFileSync(data, 'utf8'), 'retained strand fixture');
+  const receipt = JSON.parse(fs.readFileSync(old.manifestPath));
+  assert.equal(receipt.version, '0.1.0');
+  assert.equal(receipt.binary.version, '0.1.0');
+  assert.equal(receipt.binary.packageVersion, '0.2.0');
+  assert.equal(receipt.mcpRuntime.version, MCP_VERSION);
+  assert.equal(receipt.previousMcpRuntime.version, LEGACY_MCP_VERSION);
+  assert.equal(receipt.previousMcpRuntime.files, undefined);
+  assert.ok(fs.statSync(old.manifestPath).size < 64 * 1024);
+  const commands = f.commands.slice(commandStart);
+  assert.deepEqual(commands[0].args, ['node', 'stop', '--json']);
+  assert.deepEqual(commands[1].args, ['init', '--json']);
+  assert.ok(commands.some(({ args }) => args.join(' ') === 'node start --json'));
+});
+
+test('consented upgrade migrates only exact owned clients; uninstall removes both runtimes', async (t) => {
+  const f = fixture(t);
+  fs.mkdirSync(join(f.home, '.cursor'));
+  fs.writeFileSync(join(f.home, '.cursor/mcp.json'), '{"mcpServers":{"other":{"command":"keep"}},"theme":"keep"}');
+  fs.mkdirSync(join(f.home, '.codex'));
+  fs.writeFileSync(join(f.home, '.codex/config.toml'), 'model = "keep"\n');
+  const old = await installLegacy(f, ['cursor', 'codex']);
+  const result = await f.installer().install(parseArgs(['--yes', '--no-service', '--mcp-client=cursor,codex']));
+  assert.deepEqual(result.mcpClientsNeedingUpdate, []);
+  const config = JSON.parse(fs.readFileSync(join(f.home, '.cursor/mcp.json')));
+  assert.deepEqual(config.mcpServers.weave.args, [f.installer().mcpRuntime.entry]);
+  assert.equal(config.mcpServers.other.command, 'keep');
+  assert.ok(fs.readFileSync(join(f.home, '.codex/config.toml'), 'utf8').includes('mcp-0.2.0'));
+  assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
+  for (const path of [old.mcpRuntime.path, old.mcpRuntime.censusPath, f.installer().mcpRuntime.path, f.installer().mcpRuntime.censusPath]) assert.equal(fs.existsSync(path), false);
+  assert.deepEqual(JSON.parse(fs.readFileSync(join(f.home, '.cursor/mcp.json'))), { mcpServers: { other: { command: 'keep' } }, theme: 'keep' });
+  assert.ok(fs.readFileSync(join(f.home, '.codex/config.toml'), 'utf8').includes('model = "keep"'));
+});
+
+test('failed new MCP download keeps the working legacy server and recovers without redownloading it', async (t) => {
+  let failDownload = false;
+  const f = fixture(t, { response: (_, args) => failDownload && args[1] === 'install' ? { code: 1, stdout: '', stderr: 'fixture download failed' } : null });
+  const old = await installLegacy(f, ['cursor']);
+  const path = old.clientDefinition('cursor').path, config = fs.readFileSync(path), census = fs.readFileSync(old.mcpRuntime.censusPath);
+  failDownload = true;
+  await assert.rejects(f.installer().install(headless()), { code: 'MCP_INSTALL_FAILED' });
+  assert.deepEqual(fs.readFileSync(path), config);
+  assert.deepEqual(fs.readFileSync(old.mcpRuntime.censusPath), census);
+  assert.equal(fs.existsSync(old.mcpRuntime.entry), true);
+  const interrupted = JSON.parse(fs.readFileSync(old.manifestPath));
+  assert.equal(interrupted.mcpRuntime, undefined);
+  assert.equal(interrupted.previousMcpRuntime.version, LEGACY_MCP_VERSION);
+  assert.deepEqual(fs.readdirSync(join(old.weaveHome, 'tools')).sort(), ['mcp-0.1.0', 'mcp-0.1.0.census.json']);
+  failDownload = false;
+  assert.equal((await f.installer().install(headless())).ok, true);
+  assert.equal(f.commands.filter(({ args }) => args[1] === 'install').length, 3, 'one old install, one failed new download, one retry');
+  assert.deepEqual(fs.readFileSync(path), config);
+});
+
+test('crash after durable legacy retention resumes from the previous receipt', async (t) => {
+  const f = fixture(t), old = await installLegacy(f, ['cursor']);
+  const owner = f.installer(); owner.loadManifest();
+  const save = owner.saveManifest.bind(owner);
+  owner.saveManifest = () => {
+    save();
+    if (owner.manifest.previousMcpRuntime && !owner.manifest.mcpRuntime) throw new Error('fixture interruption after preserving legacy runtime');
+  };
+  await assert.rejects(owner.mcpRuntime.install(), /fixture interruption/);
+  assert.equal(fs.existsSync(old.mcpRuntime.entry), true);
+  assert.equal((await f.installer().install(headless())).ok, true);
+  assert.equal(f.commands.filter(({ args }) => args[1] === 'install').length, 2);
+});
+
+test('modified legacy runtime and foreign new runtime are preserved during upgrade', async (t) => {
+  for (const conflict of ['legacy-edit', 'foreign-new']) {
+    const f = fixture(t), old = await installLegacy(f, ['cursor']);
+    const config = old.clientDefinition('cursor').path, before = fs.readFileSync(config);
+    const path = conflict === 'legacy-edit' ? old.mcpRuntime.entry : join(f.installer().mcpRuntime.path, 'foreign');
+    if (conflict === 'foreign-new') fs.mkdirSync(f.installer().mcpRuntime.path);
+    fs.writeFileSync(path, 'retain local work');
+    await assert.rejects(f.installer().install(headless()), { code: 'UNMANAGED_MCP_RUNTIME' });
+    assert.equal(fs.readFileSync(path, 'utf8'), 'retain local work');
+    assert.deepEqual(fs.readFileSync(config), before);
+    assert.equal(fs.existsSync(old.mcpRuntime.censusPath), true);
+  }
+});
+
+test('modified legacy client blocks its migration and preserves both runtime trees on uninstall', async (t) => {
+  const f = fixture(t), old = await installLegacy(f, ['cursor']);
+  const path = old.clientDefinition('cursor').path;
+  const config = JSON.parse(fs.readFileSync(path)); config.mcpServers.weave.command = 'my-local-server';
+  fs.writeFileSync(path, JSON.stringify(config));
+  const before = fs.readFileSync(path);
+  await assert.rejects(f.installer().install(parseArgs(['--yes', '--no-service', '--mcp-client=cursor'])), { code: 'MCP_ENTRY_CONFLICT' });
+  assert.deepEqual(fs.readFileSync(path), before);
+  const removed = await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+  assert.equal(removed.ok, false);
+  assert.deepEqual(fs.readFileSync(path), before);
+  assert.equal(fs.existsSync(old.mcpRuntime.entry), true);
+  assert.equal(fs.existsSync(f.installer().mcpRuntime.entry), true);
+});
+
+test('0.2.0 can uninstall a retained 0.1.3 installation without downloading an upgrade', async (t) => {
+  const f = fixture(t), old = await installLegacy(f, ['cursor', 'codex']);
+  fs.writeFileSync(join(old.weaveHome, 'retained-strand'), 'keep');
+  assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
+  assert.equal(f.commands.filter(({ args }) => args[1] === 'install').length, 1);
+  assert.equal(fs.existsSync(old.mcpRuntime.path), false);
+  assert.equal(fs.existsSync(old.mcpRuntime.censusPath), false);
+  assert.equal(fs.readFileSync(join(old.weaveHome, 'retained-strand'), 'utf8'), 'keep');
+});
+
+test('0.1.2 legacy MCP receipt compacts before native upgrade and retains both census bindings', async (t) => {
+  const f = fixture(t, { response: (command, args) => {
+    if (command === join(f.home, '.weave/bin/weave')) assert.ok(fs.statSync(join(f.home, '.weave/.joinweave-install.json')).size < 64 * 1024, `native command ${args[0]} must never see an oversized ownership receipt`);
+    return null;
+  } });
+  const old = await installLegacy(f, ['cursor']);
+  legacyLargeReceipt(f, old);
+  assert.equal((await f.installer().install(headless())).ok, true);
+  const receipt = JSON.parse(fs.readFileSync(old.manifestPath));
+  assert.equal(receipt.mcpRuntime.version, MCP_VERSION);
+  assert.equal(receipt.previousMcpRuntime.version, LEGACY_MCP_VERSION);
+  assert.equal(receipt.previousMcpRuntime.files, undefined);
+  assert.equal(fs.statSync(old.mcpRuntime.censusPath).mode & 0o777, 0o600);
+});
+
+test('upgrade shutdown failure preserves old executable, service definition and receipt', async (t) => {
+  for (const managed of [false, true]) {
+    let stopFails = false;
+    const f = fixture(t, { response: (command, args) => {
+      if (!stopFails) return null;
+      if (managed && command === 'systemctl' && args.includes('is-active')) return { code: 0, stdout: 'active', stderr: '' };
+      if (!managed && args.join(' ') === 'node stop --json') return { code: 1, stdout: '', stderr: 'unowned daemon' };
+      return null;
+    } });
+    const old = await installLegacy(f, [], { service: managed });
+    const binary = fs.readFileSync(old.binary), receipt = fs.readFileSync(old.manifestPath);
+    const definition = managed ? JSON.parse(receipt).service.path : null;
+    const serviceBytes = definition && fs.readFileSync(definition);
+    stopFails = true;
+    await assert.rejects(f.installer().install(headless()), { code: managed ? 'SERVICE_STOP_FAILED' : 'NATIVE_COMMAND_FAILED' });
+    assert.deepEqual(fs.readFileSync(old.binary), binary);
+    assert.deepEqual(fs.readFileSync(old.manifestPath), receipt);
+    if (definition) assert.deepEqual(fs.readFileSync(definition), serviceBytes);
+  }
+});
+
+async function interruptedBinaryUpgrade(f, phase) {
+  const owner = f.installer(), save = owner.saveManifest.bind(owner);
+  owner.saveManifest = () => {
+    if (phase === 'after-rename' && !owner.manifest.binaryUpgrade && owner.manifest.binary?.packageVersion === '0.2.0') {
+      throw new Error('fixture crash after binary replacement, before receipt save');
+    }
+    save();
+    if (phase === 'before-rename' && owner.manifest.binaryUpgrade) throw new Error('fixture crash after durable upgrade intent');
+  };
+  await assert.rejects(owner.install(headless()), /fixture crash/);
+  const journal = JSON.parse(fs.readFileSync(owner.manifestPath));
+  assert.match(journal.binaryUpgrade.fromSha256, /^[a-f0-9]{64}$/);
+  assert.match(journal.binaryUpgrade.toSha256, /^[a-f0-9]{64}$/);
+  assert.notEqual(journal.binaryUpgrade.fromSha256, journal.binaryUpgrade.toSha256);
+  assert.equal(journal.binaryUpgrade.packageVersion, '0.2.0');
+  assert.equal(journal.binary.sha256, journal.binaryUpgrade.fromSha256);
+  assert.equal(journal.service, null);
+  return journal;
+}
+
+test('binary upgrade intent recovers both sides of rename through reinstall or uninstall', async (t) => {
+  for (const phase of ['before-rename', 'after-rename']) {
+    for (const action of ['install', 'uninstall']) {
+      const f = fixture(t), old = await installLegacy(f, ['cursor']);
+      fs.writeFileSync(join(old.weaveHome, 'identity-fixture'), 'keep');
+      await interruptedBinaryUpgrade(f, phase);
+      const result = action === 'install'
+        ? await f.installer().install(headless())
+        : await f.installer().uninstall(parseArgs(['uninstall', '--yes']));
+      assert.equal(result.ok, true);
+      assert.equal(fs.readFileSync(join(old.weaveHome, 'identity-fixture'), 'utf8'), 'keep');
+      if (action === 'install') {
+        assert.deepEqual(fs.readFileSync(old.binary), fs.readFileSync(f.source));
+        const receipt = JSON.parse(fs.readFileSync(old.manifestPath));
+        assert.equal(receipt.binaryUpgrade, undefined);
+        assert.equal(receipt.binary.version, '0.1.0');
+        assert.equal(receipt.binary.packageVersion, '0.2.0');
+        assert.equal(receipt.version, '0.1.0');
+      } else assert.equal(fs.existsSync(old.binary), false);
+    }
+  }
+});
+
+test('pending binary replacement refuses a third hash and changed package bytes without overwriting', async (t) => {
+  for (const tamper of ['installed', 'source']) {
+    const f = fixture(t), old = await installLegacy(f);
+    await interruptedBinaryUpgrade(f, 'after-rename');
+    const changed = tamper === 'installed' ? old.binary : f.source;
+    fs.writeFileSync(changed, 'foreign replacement');
+    const binary = fs.readFileSync(old.binary), receipt = fs.readFileSync(old.manifestPath);
+    await assert.rejects(f.installer().install(headless()), { code: tamper === 'installed' ? 'UNMANAGED_BINARY' : 'INVALID_MANIFEST' });
+    assert.deepEqual(fs.readFileSync(old.binary), binary);
+    assert.deepEqual(fs.readFileSync(old.manifestPath), receipt);
+    if (tamper === 'installed') {
+      await assert.rejects(f.installer().uninstall(parseArgs(['uninstall', '--yes'])), { code: 'UNMANAGED_BINARY' });
+      assert.deepEqual(fs.readFileSync(old.binary), binary);
+      assert.deepEqual(fs.readFileSync(old.manifestPath), receipt);
+    }
+  }
+});
+
+test('managed upgrade preserves service changes made during shutdown', async (t) => {
+  let changeDuringStop = false, definition;
+  const f = fixture(t, { response: (command, args) => {
+    if (changeDuringStop && command === 'systemctl' && args.includes('disable') && args.includes('--now')) fs.appendFileSync(definition, '# concurrent local edit\n');
+    return null;
+  } });
+  const old = await installLegacy(f, [], { service: true });
+  const receipt = fs.readFileSync(old.manifestPath), binary = fs.readFileSync(old.binary);
+  definition = JSON.parse(receipt).service.path;
+  changeDuringStop = true;
+  await assert.rejects(f.installer().install(headless()), { code: 'CONCURRENT_EDIT' });
+  assert.deepEqual(fs.readFileSync(old.binary), binary);
+  assert.deepEqual(fs.readFileSync(old.manifestPath), receipt);
+  assert.ok(fs.readFileSync(definition, 'utf8').endsWith('# concurrent local edit\n'));
 });

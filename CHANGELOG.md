@@ -1,3 +1,45 @@
+## 2026-10-12 — Freeze seven 0.2.0 archives for final acceptance
+
+- Record all seven exact npm archives and four native qualification receipts in a SHA256/SHA512-bound release manifest. Add a standalone verifier and credential-free GitHub-hosted npm provenance recipe. These files prepare final managed-install acceptance and attestation; no workflow dispatch or publication occurs in this commit.
+
+## 2026-10-12 — Bind all four qualified native distributions
+
+- Bind the workspace lock to the exact 0.2.0 macOS/Linux arm64/x64 archive SRIs and align all three JavaScript workspace dependency entries. Each native target passes 137 checks with three existing SDK/network timing cases ignored; macOS run 38320886352 completed on Depot without Developer ID signing.
+- Preserve binary/service protocol 0.1.0 and API2 metadata. Exact installed-upgrade acceptance and npm provenance/publication remain separate release steps.
+
+## 2026-10-12 — Bind the documented MCP archive
+
+- Bind the installer to the exact MCP 0.2.0 archive repacked on Depot after the version-specific documentation cleanup. Verify packed files byte for byte against source; runtime logic is unchanged. Final installed-upgrade acceptance remains pending.
+
+## 2026-10-12 — Version-specific 0.2.0 package documentation
+
+- Describe API-2 and the 46-tool/six-model workbench durably in packed CLI, MCP and installer guides; remove temporary candidate/publication and historical test-status wording. Preserve runtime limits, Desktop selected-file grant boundaries and consented migration/recovery behavior.
+- Correct the root README to published joinweave 0.1.3 with 0.1.0 dependencies and prepared 0.2.0 pending remaining qualification/publication. Keep registry submission explicitly pending with matching archive and namespace-owner requirements. Documentation only; changed archives require repacking and integrity rebinding before release.
+
+## 0.2.0 — 2026-10-12 (release candidate)
+
+- Align the CLI wrapper, native package dependencies, 46-tool MCP metadata and installer at 0.2.0. Runtime API2 supplies persistent typed models; the native service receipt protocol and binary version stay 0.1.0, with the distribution version recorded separately as packageVersion. Explicitly ship both existing license files in CLI/MCP archives.
+- Retain the verified 0.1.0 MCP tree and compact census during upgrade, preserving unconsented client configurations and reporting which clients need explicit migration. Recover interrupted upgrades; uninstall only unchanged owned current/previous runtimes.
+- Stop the owned previous native process before replacing different executable bytes or a previous package version. Preserve executable and service definition when shutdown cannot be confirmed. Persist and sync an old/new hash-bound replacement intent before rename; recover either side of interruption through reinstall or uninstall, refusing foreign bytes.
+- Add isolated upgrade, client-conflict, legacy receipt, retry and shutdown regressions, plus 46-tool installed-protocol acceptance. Depot kmldz7r7hr passes 62 checks with two explicitly deferred real-runtime checks; the exact MCP archive SRI is bound after byte-for-byte source verification. Native archive SRIs and the workspace release lock remain pending, so this candidate is not publishable yet. Actual fresh/upgrade managed-service and installed MCP acceptance remain required.
+
+## 2026-10-12 — Prepare official MCP Registry metadata
+
+- Add the `io.github.l1felabs/weave` npm ownership marker, stdio `server.json`, documentation/issue links and discovery keywords. Record version, compatible native runtime, Depot qualification and GitHub organization-owner prerequisites; distinguish the published ten-tool release from the 46-tool source candidate. No version change, runtime change or registry submission.
+
+## 2026-10-12 — Reject malformed MCP capability catalogs
+
+- Require a safe integer runtime API version and a typed command-list catalog before invoking model data operations. Reject coerced string/array versions, non-finite/unsafe numbers and malformed catalogs; regression verifies every refusal performs only the capability probe. Remote tests remain pending.
+
+## 2026-10-12 — Typed model MCP candidate
+
+- Extend the source MCP to 46 tools, inheriting the persistent CLI’s bounded Locus, Lens, Forum, Gnosis, Basis and Nexus contracts with runtime capability checks. Preserve explicit sharing, destructive-operation annotations, stdin payloads and strict argument validation.
+- Add actual candidate-binary MCP acceptance for six-model restart/deletion persistence and 4096-dimensional protocol boundaries. The 17-core-tool predecessor passed Depot `93hw896hq5`; model qualification and publication remain pending.
+
+## 2026-10-12 — Native MCP capability parity (candidate)
+
+- Extend the workspace MCP from ten to seventeen typed tools with node lifecycle, bounded logs, DHT statistics, Strand listing and explicit seeding. Preserve structured native results, cancellation and the single persistent writer; distinguish workspace authority from Desktop selected-file grants. New protocol coverage awaits Depot and actual-node acceptance; no package publication is claimed.
+
 ## 2026-10-12 — Corrected installer passes full native acceptance
 
 - Bind the exact 0.1.3 archive to successful Depot run 38281000021, 60 checks with zero failures/skips, and real fresh-user systemd install, restart, crash recovery, persistent MCP native status and retained-data uninstall. The native ownership receipt is 854 bytes. Preserve the signed archive pipeline; npm publication remains pending.

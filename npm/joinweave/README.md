@@ -2,8 +2,11 @@
 
 The web wasn't built for agents. Weave was.
 
+Version 0.2.0 installs the native API-2 runtime and a persistent 46-tool MCP
+server for node operations, Strands and six data-model families.
+
 ```sh
-npx joinweave@0.1.3
+npx joinweave@0.2.0
 ```
 
 One command installs the developer runtime: the prebuilt native CLI, a local
@@ -14,11 +17,11 @@ No Rust toolchain is required.
 
 | Component | Installed location / behavior |
 | --- | --- |
-| Native CLI 0.1.0 | `~/.weave/bin/weave` |
+| Native CLI package 0.2.0 (runtime API2) | `~/.weave/bin/weave` |
 | Local identity and data | `~/.weave`; private keys stay on this computer |
 | Peer node | User-level launchd or systemd service |
 | Visible workspace | `~/Weave` |
-| MCP server 0.1.0 | `~/.weave/tools/mcp-0.1.0`; independent of the npx cache |
+| MCP server 0.2.0, 46 tools | `~/.weave/tools/mcp-0.2.0`; independent of the npx cache |
 
 Requirements: Node.js 20 or later with npm; macOS arm64/x64 (binary minimum
 load target macOS 11), or Linux arm64/x64 with glibc 2.39 or later. Linux arm64
@@ -47,7 +50,7 @@ modified installer entries and unsafe symbolic links are refused. Configuration
 edits use atomic replacements and private backup files beside the config.
 
 ```sh
-npx joinweave@0.1.3 --yes --json
+npx joinweave@0.2.0 --yes --json
 ```
 
 `--json` produces exactly one JSON result on stdout, with no animation, prompts
@@ -55,7 +58,7 @@ or progress noise. Errors return `ok: false` and a nonzero exit status.
 `--yes` skips all PATH and client configuration questions. To explicitly consent:
 
 ```sh
-npx joinweave@0.1.3 --yes --path --mcp-client cursor,codex --json
+npx joinweave@0.2.0 --yes --path --mcp-client cursor,codex --json
 ```
 
 The installer supports `claude-desktop`, `claude-code`, `cursor`, and `codex`.
@@ -75,12 +78,35 @@ the current Node; a headless rerun leaves it unchanged. Uninstall still recogniz
 the exact owned old entry even if its Node executable is gone.
 
 The MCP installation uses npm with `--ignore-scripts`, a private exclusive
-staging directory, the pinned published package integrity, and an owned
+staging directory, the release's pinned package integrity, and an owned
 file/mode census in a separate private file bound by SHA256. The native service
-ownership receipt remains below its64KiB limit. Existing0.1.2 receipts migrate
+ownership receipt remains below its 64 KiB limit. Existing 0.1.2 receipts migrate
 before native service operations. User npm release-age policy is preserved. If a policy or a
 network failure prevents installation, fix that condition and rerun; no partial
 MCP tree is reported as installed.
+
+## Upgrading an existing installation
+
+Run the same 0.2.0 installer against the existing workspace. It verifies ownership,
+stops the old managed or detached node before replacing its executable, and starts
+the API2 runtime with the same identity and data. A modified binary, service,
+runtime or client entry is preserved and reported.
+
+The old 0.1.0 MCP tree and its private census remain available alongside the new
+0.2.0 tree. Headless installation preserves existing agent client files exactly;
+the result lists `mcpClientsNeedingUpdate` and prints an explicit migration command:
+
+```sh
+npx joinweave@0.2.0 --yes --mcp-client cursor,codex
+```
+
+Select only the clients you want to reconnect. The installer migrates an intact
+owned definition, preserves unrelated settings, and saves a private backup. New
+MCP download failures preserve the previous tree and ownership receipt for a
+safe retry. Native replacement has a durable old/new hash-bound journal, so
+interruption before or after executable replacement can recover through reinstall
+or uninstall. Missing or changed replacement bytes are refused. The unchanged previous tree is removed with the current tree during
+uninstall; modified or still-referenced trees are retained.
 
 ## Options and next actions
 
@@ -105,18 +131,21 @@ Use `weave node start`, `weave node stop`, `weave node status`, and
 `weave node logs` to manage the installed node. `WEAVE_HOME` can select a
 dedicated absolute workspace. See the [quickstart](https://docs.weave.earth/getting-started/quickstart)
 and [MCP reference](https://docs.weave.earth/tooling/mcp) for the supported runtime
-commands and ten MCP tools. Other library models are not added to the MCP tool
-surface by this installer.
+commands and 46 MCP tools, including node lifecycle, DHT inspection, Strand
+operations and persistent Locus, Lens, Forum, Gnosis, Basis and Nexus models.
+Model tools require native runtime API2 and refuse an older capability catalog.
+The native package version and API contract are distinct from the Rust binary
+version string; this release retains native service receipt protocol 0.1.0.
 
 ## Recovery and removal
 
 ```sh
-npx joinweave@0.1.3 uninstall --yes
-npx joinweave@0.1.3 uninstall --yes --purge
+npx joinweave@0.2.0 uninstall --yes
+npx joinweave@0.2.0 uninstall --yes --purge
 ```
 
 Uninstall stops the node and removes only owned service, executable, PATH,
-client entries and the unchanged managed MCP tree. It retains identity and
+client entries and unchanged current/previous managed MCP trees. It retains identity and
 workspace data by default. `--purge` also deletes the dedicated workspace,
 including private identity keys. `~/Weave` is always preserved because it may
 contain unrelated files. Modified entries are preserved and reported; they
