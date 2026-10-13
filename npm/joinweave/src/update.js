@@ -24,7 +24,7 @@ function write(path, bytes, mode = 0o600) {
   try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
 }
 function sync(path) { const fd = fs.openSync(path, fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); } }
-function ownedState(owner) {
+export function ownedState(owner) {
   const bytes = read(owner.manifestPath, 64 * 1024);
   owner.loadManifest();
   if (owner.manifest.binaryUpgrade) fail('UPDATE_RECOVERY_REQUIRED', 'Finish the interrupted installation before checking for another update.');
@@ -87,7 +87,8 @@ export async function updateWorkspace(owner, options, { discover = discoverRelea
   write(join(stage, 'weave-update.json'), release.manifestBytes);
   write(join(stage, 'weave-update.sigstore.json'), JSON.stringify(release.bundle));
   for (const p of selected) {
-    const bytes = await download(assetURL(result.version, p.asset), p.bytes, { fetchImpl, signal: owner.signal, timeout: 60_000 });
+    const { cachedArchive } = await import('./auto-update.js');
+    const bytes = cachedArchive(owner, p) || await download(assetURL(result.version, p.asset), p.bytes, { fetchImpl, signal: owner.signal, timeout: 60_000 });
     verifyArchive(bytes, p);
     const members = unpack(bytes);
     const pkg = JSON.parse(members.get('package/package.json')?.bytes.toString('utf8') || 'null');
