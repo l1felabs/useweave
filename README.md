@@ -29,19 +29,28 @@ you explicitly request those edits. Check the running workspace with
 [MCP reference](https://docs.weave.earth/tooling/mcp) ·
 [Installer guide](npm/joinweave/README.md) · [CLI](npm/cli/README.md)
 
-## Release status — 2026-10-12
+## Current release
 
-The currently published installer is **joinweave 0.1.3**. It installs the CLI,
-MCP server and native platform packages at **0.1.0**; that MCP server exposes
-ten tools. The installer keeps the native ownership receipt compact and stores
-the managed MCP file census separately.
+**joinweave 0.2.0 is published**, with matching 0.2.0 CLI, MCP server and four
+native platform packages. The MCP server exposes **46 tools** backed by runtime
+API 2: 17 core operations, capability discovery and 28 data-model operations.
+The installer keeps the native ownership receipt compact and stores the managed
+MCP file census separately.
 
-**0.2.0 is prepared and pending remaining qualification and publication.** It
-aligns all seven npm packages around runtime API 2 and the 46-tool MCP server.
-The version-specific package guides describe its behavior; they do not establish
-that the version is available on npm. Exact archive qualification, installed
-upgrade acceptance and final release bindings remain release gates. Official
-MCP Registry metadata is prepared, not submitted.
+Fresh installation and 0.1.3 → 0.2.0 upgrade have passed actual npm-registry
+acceptance on Linux x64 with systemd user services, including MCP discovery,
+managed restart/crash recovery and retained-data uninstall. This result does not
+establish post-publication managed-install acceptance on every supported platform.
+
+Acceptance completed on **October 13, 2026 at 00:32 CT**. The
+[fresh-install and upgrade run](https://github.com/l1felabs/weave-release-source/actions/runs/38351874053)
+is a private CI record and requires repository access. The
+[public archive manifest](https://github.com/l1felabs/useweave/blob/250cf333292eb864e32d668923e582d77069f0ca/release/0.2.0/manifest.json)
+binds the seven package archives; registry publication and installed-flow
+acceptance are separate evidence.
+
+Official MCP Registry metadata remains prepared, not submitted. npm publication
+does not establish an MCP Registry or third-party directory listing.
 
 ## The 0.2.0 developer workbench
 

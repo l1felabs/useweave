@@ -1,3 +1,8 @@
+## 2026-10-13 — Publish the aligned 0.2.0 runtime and 46-tool MCP
+
+- Update the public release status to all seven npm packages at 0.2.0 and the runtime API-2/46-tool developer workbench after exact registry archive verification and successful fresh-install and 0.1.3 upgrade acceptance on Depot Linux x64 at 00:32 CT ([run 38351874053](https://github.com/l1felabs/weave-release-source/actions/runs/38351874053), private CI record).
+- Record the managed restart/crash recovery and retained-data uninstall scope without claiming post-publication acceptance on every platform or an MCP Registry listing. Packed package documentation, archives and provenance bindings are unchanged.
+
 ## 2026-10-12 — Freeze seven 0.2.0 archives for final acceptance
 
 - Record all seven exact npm archives and four native qualification receipts in a SHA256/SHA512-bound release manifest. Add a standalone verifier and credential-free GitHub-hosted npm provenance recipe. These files prepare final managed-install acceptance and attestation; no workflow dispatch or publication occurs in this commit.
