@@ -29,7 +29,12 @@ export function parseArgs(args) {
   const options = { action: 'install', yes: false, json: false, noService: false, noMcp: false, noAnimation: false, path: false, purge: false, mcpClients: [] };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === 'uninstall' && i === 0) options.action = 'uninstall';
+    if (['uninstall', 'update'].includes(arg) && i === 0) options.action = arg;
+    else if (arg === '--check') options.check = true;
+    else if (arg === '--expected-receipt-sha256') {
+      options.expectedReceiptSha256 = args[++i];
+      if (!/^[a-f0-9]{64}$/.test(options.expectedReceiptSha256 || '')) fail('INVALID_ARGUMENT', 'Expected receipt must be a SHA256 hash.');
+    }
     else if (arg === '--yes' || arg === '-y') options.yes = true;
     else if (arg === '--json') options.json = true;
     else if (arg === '--no-service') options.noService = true;
@@ -48,6 +53,9 @@ export function parseArgs(args) {
       }
     } else fail('INVALID_ARGUMENT', `Unknown argument: ${arg}`);
   }
+  if (options.check && options.action !== 'update') fail('INVALID_ARGUMENT', '--check requires update.');
+  if (options.action === 'update' && (options.noService || options.noMcp || options.path || options.purge || options.mcpClients.length || options.expectedReceiptSha256)) fail('INVALID_ARGUMENT', 'Update preserves existing service/MCP settings and does not accept client or install overrides.');
+  if (options.expectedReceiptSha256 && options.action !== 'install') fail('INVALID_ARGUMENT', 'Expected receipt is only used by verified installation handoff.');
   if (options.purge && options.action !== 'uninstall') fail('INVALID_ARGUMENT', '--purge is only valid with uninstall.');
   if (options.noMcp && options.mcpClients.length) fail('INVALID_ARGUMENT', '--no-mcp conflicts with --mcp-client.');
   return options;
@@ -125,7 +133,7 @@ function unlinkIfUnchanged(path, expectedHash) {
 }
 
 /** Callback errors can precede close. Ownership is released only after close. */
-export function runCommand(command, args, { env = process.env, timeout = 60_000, cwd, signal } = {}) {
+export function runCommand(command, args, { env = process.env, timeout = 60_000, cwd, signal, killOnTimeout = true, terminationWaitMs = 3_000 } = {}) {
   return new Promise((done) => {
     let child, stdout = '', stderr = '', error, closed = false, settled = false;
     let deadlineTimer, killTimer, closeTimer, stopping = false;
@@ -148,8 +156,8 @@ export function runCommand(command, args, { env = process.env, timeout = 60_000,
       stopping = true; error ||= Object.assign(new Error(reason), { code: reason });
       if (closed) { finish(true); return; }
       child?.kill('SIGTERM');
-      killTimer = setTimeout(() => { if (!closed) child?.kill('SIGKILL'); }, 500);
-      closeTimer = setTimeout(() => finish(closed), 3_000);
+      if (killOnTimeout) killTimer = setTimeout(() => { if (!closed) child?.kill('SIGKILL'); }, 500);
+      closeTimer = setTimeout(() => finish(closed), terminationWaitMs);
     };
     const cancel = () => stop('ABORT_ERR');
     if (signal?.aborted) { done({ code: 1, stdout, stderr, terminationConfirmed: true }); return; }
@@ -529,11 +537,20 @@ export class Installer {
     this.progress(`Connected ${client}`);
   }
 
+  async update(options) {
+    const { updateWorkspace } = await import('./update.js');
+    return updateWorkspace(this, options);
+  }
+
   async install(options) {
     this.validatePlatform();
     ensureDirectory(this.weaveHome);
     this.lock();
     try {
+      if (options.expectedReceiptSha256) {
+        const receipt = readFile(this.manifestPath);
+        if (!receipt || digest(receipt) !== options.expectedReceiptSha256) fail('UPDATE_WORKSPACE_CHANGED', 'Workspace ownership changed after update preparation. Nothing was replaced.');
+      }
       this.loadManifest();
       this.mcpRuntime.migrateLegacyReceipt();
       this.stage({ id: 'runtime', label: 'Installing the native runtime' });

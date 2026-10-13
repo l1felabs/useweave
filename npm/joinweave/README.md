@@ -156,3 +156,43 @@ Cancellation waits for the installer child process to close, with bounded
 SIGTERM/SIGKILL escalation. If termination cannot be confirmed, its persistent
 lock and MCP stage are retained. A new installer refuses the lock while its
 recorded parent or child is alive; do not manually remove it under a live process.
+
+## GitHub release updates (development source)
+
+This update feature is not in the published 0.2.0 archive. It requires a future
+reviewed release containing the updater and a signed GitHub update catalog.
+
+```sh
+joinweave update --check --json
+joinweave update
+# Explicit unattended application of the verified release:
+joinweave update --yes --json
+```
+
+The check uses stable releases from `l1felabs/useweave`. It authenticates the
+catalog to the pinned GitHub release workflow using Sigstore, then checks its
+expiry, exact source bindings, package versions, platform and archive digests.
+No GitHub CLI or GitHub login is required. Network, signature, missing-catalog
+and downgrade errors fail closed; they do not become a claim that Weave is current.
+Node ^20.17.0 or >=22.9.0 is required by the pinned verifier.
+
+Applying an update requires an existing owned workspace and confirmation or
+`--yes`. It stages exact release archives with npm lifecycle scripts disabled,
+then invokes that release's installer. A receipt hash is checked again under
+the installer lock before any replacement. Existing service/MCP enablement,
+identity and data are preserved; shell and agent-client settings are never
+silently edited. Existing npm release-age policies still apply to registry
+requests. A GitHub asset is governed by the authenticated GitHub catalog policy.
+
+Previous executable, receipt and service bytes remain in a private directory
+under `~/.weave/updates/`. These are recovery material, **not automatic rollback**.
+If the release installer fails, it retains its existing interrupted-install
+recovery behavior; rerun the same verified release after resolving the error.
+Do not manually restore a stale ownership receipt over a running workspace.
+The updater rejects catalog entries declaring a store migration or an unsupported
+runtime/receipt contract. Scheduled automatic application, health-triggered
+rollback, native CLI/TUI UI integration and signed Desktop updates are separate
+follow-ons. No background updater or timer is installed by these commands.
+
+See [the catalog and qualification contract](../../scripts/github-update/README.md)
+for release prerequisites and the exact remaining acceptance gates.

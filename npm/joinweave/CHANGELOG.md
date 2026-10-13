@@ -1,3 +1,9 @@
+## 2026-10-13 — Prepare authenticated GitHub release checks and explicit updates
+
+- Add shared stable-release catalog discovery with pinned GitHub OIDC/Sigstore identity, signed-digest/source bindings, expiry, strict versions, bounded GitHub-only downloads and archive integrity checks. Missing catalog metadata fails closed; no key, account or release is created.
+- Add `joinweave update --check --json` and explicit verified-archive handoff to the selected release installer. Preserve owned service/MCP settings and client consent; compare the receipt again under the installer lock and retain private previous binary/receipt/service recovery material.
+- This is development source, not published 0.2.0 behavior. Scheduled application, health-based rollback and Desktop/native integration remain separate. Depot dependency-lock generation, tests, a genuine signed catalog and real managed update acceptance are still required. Frozen 0.2.0 archives are unchanged.
+
 ## 2026-10-12 — Bind all four qualified native distributions
 
 - Bind the workspace lock to the exact 0.2.0 macOS/Linux arm64/x64 archive SRIs and align all three JavaScript workspace dependency entries. Each native target passes 137 checks with three existing SDK/network timing cases ignored; macOS run 38320886352 completed on Depot without Developer ID signing.

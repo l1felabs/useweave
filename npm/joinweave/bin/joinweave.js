@@ -15,7 +15,7 @@ const onInt = () => interrupt('SIGINT'), onTerm = () => interrupt('SIGTERM');
 try {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
-    const usage = 'joinweave [uninstall] [--yes] [--json] [--no-animation] [--no-service] [--no-mcp] [--path] [--mcp-client CLIENT] [--purge]\n\nInstalls native CLI, local identity, peer node, workspace and a persistent MCP server.\n--yes installs headlessly; PATH and MCP client edits require --path and --mcp-client.\nClients: claude-desktop, claude-code, cursor, codex; one and bridge provide manual setup.\n--no-mcp skips the MCP server and client setup. --no-animation disables terminal motion.\n--no-service starts a detached node. Uninstall keeps your data; --purge removes ~/.weave data.\n';
+    const usage = 'joinweave [uninstall|update] [--yes] [--json] [--no-animation] [--no-service] [--no-mcp] [--path] [--mcp-client CLIENT] [--purge]\n\nupdate --check --json verifies the stable GitHub release; update --yes applies an authenticated release.\nInstalls native CLI, local identity, peer node, workspace and a persistent MCP server.\n--yes installs headlessly; PATH and MCP client edits require --path and --mcp-client.\nClients: claude-desktop, claude-code, cursor, codex; one and bridge provide manual setup.\n--no-mcp skips the MCP server and client setup. --no-animation disables terminal motion.\n--no-service starts a detached node. Uninstall keeps your data; --purge removes ~/.weave data.\n';
     console.log(options.json ? JSON.stringify({ ok: true, version: VERSION, usage }) : usage);
   } else if (options.version) console.log(options.json ? JSON.stringify({ ok: true, version: VERSION }) : VERSION);
   else {
@@ -45,6 +45,9 @@ try {
     else if (options.action === 'install') {
       console.log(`\n${installationSummary(result)}\n`);
       for (const manual of result.manualMcpClients) console.log(`${manual.client}: add this MCP server in the client's settings:\n${JSON.stringify({ weave: manual.server }, null, 2)}\n`);
+    } else if (options.action === 'update') {
+      console.log(result.applied ? `Weave updated to ${result.version}.` : result.available ? `Weave ${result.version} is available. Run joinweave update to apply it.` : `Weave ${result.version} is current.`);
+      if (result.recoveryPath) console.log(`Recovery files: ${result.recoveryPath}`);
     } else {
       console.log(result.ok ? `Weave uninstalled. ${result.dataRetained ? 'Your data is preserved.' : 'Workspace data removed.'} Your ~/Weave folder is preserved.` : 'Uninstall preserved modified files.');
       for (const warning of result.warnings) console.error(warning);

@@ -1,3 +1,9 @@
+## 2026-10-13 — Prepare authenticated GitHub release checks and explicit updates
+
+- Add shared stable-release catalog discovery with pinned GitHub OIDC/Sigstore identity, signed-digest/source bindings, expiry, strict versions, bounded GitHub-only downloads and archive integrity checks. Missing catalog metadata fails closed; no key, account or release is created.
+- Add `joinweave update --check --json` and explicit verified-archive handoff to the selected release installer. Preserve owned service/MCP settings and client consent; compare the receipt again under the installer lock and retain private previous binary/receipt/service recovery material.
+- This is development source, not published 0.2.0 behavior. Scheduled application, health-based rollback and Desktop/native integration remain separate. Depot dependency-lock generation, tests, a genuine signed catalog and real managed update acceptance are still required. Frozen 0.2.0 archives are unchanged.
+
 ## 2026-10-13 — Publish the aligned 0.2.0 runtime and 46-tool MCP
 
 - Update the public release status to all seven npm packages at 0.2.0 and the runtime API-2/46-tool developer workbench after exact registry archive verification and successful fresh-install and 0.1.3 upgrade acceptance on Depot Linux x64 at 00:32 CT ([run 38351874053](https://github.com/l1felabs/weave-release-source/actions/runs/38351874053), private CI record).
