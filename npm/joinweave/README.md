@@ -202,3 +202,38 @@ follow-ons. No background updater or timer is installed by these commands.
 
 See [the catalog and qualification contract](../../scripts/github-update/README.md)
 for release prerequisites and the exact remaining acceptance gates.
+
+## Automatic release preparation (next release candidate)
+
+The development source adds an opt-in background preparation process:
+
+```sh
+joinweave update --watch --no-animation
+```
+
+It checks the signed stable GitHub release immediately when due, then every six
+hours with up to 30 minutes of jitter. Failures remain visible in status and retry
+after one hour plus jitter. Run it under your existing process supervisor if you
+want it to survive logout. No launchd/systemd job is installed automatically.
+Stop it with Ctrl-C or terminate its supervisor; `WEAVE_NO_UPDATE=1` disables a
+watch invocation. This flag does not block an explicit manual update.
+
+For an existing timer, use `joinweave update --prefetch --json` as a one-shot
+check and download. Inspect the last result with `joinweave update --status --json`.
+`--watch --json` keeps stdout clean until its single final result; status remains
+available through `--status` while it runs. An existing timer controls the cadence
+of `--prefetch`; the six-hour due gate applies to `--watch`.
+
+Only archives for this platform and already-installed components are cached.
+The private `~/.weave/update-cache` holds at most 128 MiB of archives; downloads
+reserve 16 MiB of free space and obsolete recognized archives are removed.
+Unknown files and modified cache bytes are preserved and reported. The cache
+never contains wallet keys, installation data or private file invitations.
+
+Background preparation does not execute downloaded code, run npm, stop the peer
+node, change MCP/client settings or apply a release. Apply at a suitable time with
+`joinweave update --yes`; it fetches and verifies the current signed catalog again,
+rechecks cached archive digests, and uses the existing owned install transaction.
+Current runtime updates can restart your node, so unattended application is not
+enabled. Automatic draining and health-based rollback are separate follow-ons.
+These commands are source candidates and are not present in published 0.2.1.

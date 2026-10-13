@@ -31,6 +31,9 @@ export function parseArgs(args) {
     const arg = args[i];
     if (['uninstall', 'update'].includes(arg) && i === 0) options.action = arg;
     else if (arg === '--check') options.check = true;
+    else if (arg === '--prefetch') options.prefetch = true;
+    else if (arg === '--watch') options.watch = true;
+    else if (arg === '--status') options.status = true;
     else if (arg === '--expected-receipt-sha256') {
       options.expectedReceiptSha256 = args[++i];
       if (!/^[a-f0-9]{64}$/.test(options.expectedReceiptSha256 || '')) fail('INVALID_ARGUMENT', 'Expected receipt must be a SHA256 hash.');
@@ -53,7 +56,9 @@ export function parseArgs(args) {
       }
     } else fail('INVALID_ARGUMENT', `Unknown argument: ${arg}`);
   }
-  if (options.check && options.action !== 'update') fail('INVALID_ARGUMENT', '--check requires update.');
+  const updateModes = ['check', 'prefetch', 'watch', 'status'].filter(key => options[key]);
+  if (updateModes.length && options.action !== 'update') fail('INVALID_ARGUMENT', 'Update options require update.');
+  if (updateModes.length > 1) fail('INVALID_ARGUMENT', 'Choose one of --check, --prefetch, --watch or --status.');
   if (options.action === 'update' && (options.noService || options.noMcp || options.path || options.purge || options.mcpClients.length || options.expectedReceiptSha256)) fail('INVALID_ARGUMENT', 'Update preserves existing service/MCP settings and does not accept client or install overrides.');
   if (options.expectedReceiptSha256 && options.action !== 'install') fail('INVALID_ARGUMENT', 'Expected receipt is only used by verified installation handoff.');
   if (options.purge && options.action !== 'uninstall') fail('INVALID_ARGUMENT', '--purge is only valid with uninstall.');
@@ -537,6 +542,11 @@ export class Installer {
   }
 
   async update(options) {
+    if (options.prefetch || options.watch || options.status) {
+      const { prefetchUpdates, watchUpdates, updateStatus } = await import('./auto-update.js');
+      if (options.status) return updateStatus(this);
+      return options.watch ? watchUpdates(this) : prefetchUpdates(this);
+    }
     const { updateWorkspace } = await import('./update.js');
     return updateWorkspace(this, options);
   }

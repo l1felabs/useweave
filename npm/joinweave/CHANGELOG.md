@@ -1,3 +1,9 @@
+## 2026-10-13 — Opt-in automatic release preparation
+
+- Add `update --watch` for supervised periodic authenticated GitHub release checks and archive prefetch, `--prefetch` for existing timers, and read-only `--status`. No OS job is installed and no runtime, node, agent client, or executable is changed by background preparation. Stop the runner or set `WEAVE_NO_UPDATE=1` to opt out.
+- Use the existing signature and downgrade policy, a serialized private 128 MiB cache, bounded downloads, free-space reserve, six-hour checks and failure backoff. Preserve unknown/modified files. Explicit updates refresh the signed catalog and verify cached archive bytes again before using them; existing install recovery and ownership checks remain intact.
+- Scope: source candidate, not published. Automatic application remains explicit until a runtime drain contract and rollback are qualified. Package versions and release archives stay unchanged.
+
 ## 2026-10-13 — Prepare one tokenless catalog and installer signing job
 
 - Extend the local signing candidate to use the established official npm11.21.0 generateProvenance/verifyProvenance implementation for only joinweave0.2.1's exact SHA512 subject, alongside the catalog signature. Bind and export the npm bundle in the signing receipt; preserve the six old packages and contents:read/id-token:write permissions.
