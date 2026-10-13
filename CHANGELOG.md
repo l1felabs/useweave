@@ -1,3 +1,8 @@
+## 2026-10-13 — Prepare one tokenless catalog and installer signing job
+
+- Extend the local signing candidate to use the established official npm11.21.0 generateProvenance/verifyProvenance implementation for only joinweave0.2.1's exact SHA512 subject, alongside the catalog signature. Bind and export the npm bundle in the signing receipt; preserve the six old packages and contents:read/id-token:write permissions.
+- No new credential, additional signing job, application build, workflow dispatch or publication occurs. Independent review and actual positive/negative signature acceptance still gate use of this prepared successor.
+
 ## 2026-10-13 — Prepare exact catalog-signing workflow registration
 
 - Copy the reviewed prepared workflow byte-for-byte to its pinned GitHub OIDC identity path, `.github/workflows/release-catalog.yml`, in this local candidate. The job requires exact approved source/operations commits and catalog/manifest hashes; permissions are contents:read and id-token:write, with artifact export only.

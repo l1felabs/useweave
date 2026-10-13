@@ -135,3 +135,11 @@ https://github.com/sigstore/sigstore-js/tree/main/packages/client#attestpayload-
 The `release-artifact` target runs the same frozen-lock checks before packing only
 joinweave 0.2.1. It exports the exact installer archive, npm pack metadata, test
 log, consumed lock and Node/npm versions. No native/CLI/MCP archives are repacked.
+
+The prepared single signing job also installs the existing pinned official
+npm 11.21.0 provenance implementation. It generates and verifies provenance only
+for `pkg:npm/joinweave@0.2.1` and the exact approved archive SHA512, validates the
+workflow/operations binding, and exports `joinweave-npm-provenance.json` beside
+the catalog bundle. The six reused archives receive no new provenance or package
+publication. Permissions are unchanged, no npm token is requested, and no second
+signing job is necessary.

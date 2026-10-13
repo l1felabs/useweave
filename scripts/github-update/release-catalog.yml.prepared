@@ -1,6 +1,6 @@
 # PREPARATION ONLY: review and explicit workflow authorization are required
 # before placing these bytes at .github/workflows/release-catalog.yml.
-name: Attest approved Weave update catalog
+name: Attest approved Weave update catalog and installer
 on:
   workflow_dispatch:
     inputs:
@@ -64,7 +64,9 @@ jobs:
       - name: Install only the frozen verifier dependencies without hooks
         working-directory: operations/npm
         run: npm ci --ignore-scripts --omit=optional --no-audit --no-fund
-      - name: Verify approved bytes and attest metadata only
+      - name: Install the pinned official npm provenance implementation
+        run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
+      - name: Verify approved bytes and attest catalog plus the one new installer
         run: node operations/scripts/github-update/sign-catalog.mjs release catalog-output
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
