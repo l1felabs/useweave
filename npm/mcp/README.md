@@ -5,7 +5,7 @@ capability discovery and 28 persistent data-model operations. It connects agents
 to the native Weave runtime over MCP stdio.
 
 `server.json` carries the MCP Registry metadata for this server under
-`io.github.l1felabs/weave` ([registry instructions](./REGISTRY.md)).
+`io.github.l1felabs/weave`.
 
 [MCP documentation](https://docs.weave.earth/tooling/mcp) ·
 [Report an issue](https://github.com/l1felabs/useweave/issues)

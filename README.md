@@ -52,9 +52,9 @@ weave strand read notes
 ```
 
 `weave doctor` checks the identity, the running node and an authenticated DHT
-announce/find round trip with live peers. Agents reach the same workspace through
-the MCP server the installer registered; see the
-[MCP reference](https://docs.weave.earth/tooling/mcp).
+announce/find round trip with live peers. To connect an agent to the same workspace, rerun
+the installer with `--mcp-client claude-code` (or `claude-desktop`, `cursor`, `codex`);
+see the [MCP reference](https://docs.weave.earth/tooling/mcp).
 
 ## What's inside
 
@@ -89,13 +89,13 @@ The MCP data-model tools cover six persistent models:
 - **Identity.** Each workspace has its own signing identity and `did:oas:weave` agent DID, created on the machine. Private keys never leave it, and no account is registered.
 - **Data.** The background node owns the writable store under `~/.weave`. Data-model reads never create stores, Locus paths are virtual, and models never announce or share data on their own. Strand discovery and seeding publish availability only, so encrypt content that must stay confidential before you write it. Sparse replication fetches only the blocks you select.
 - **Agent authority.** The workspace MCP server acts with the authority of the local CLI process. The installer configures an agent client only when you select it, and preserves modified files and unrelated settings.
-- **Supply chain.** Every npm package carries npm provenance (SLSA v1) from a GitHub-hosted build of this repository; check it with `npm audit signatures`. Each [Release](https://github.com/l1felabs/useweave/releases) attaches the exact archives, their provenance bundles and `SHA256SUMS`; `joinweave update` verifies a Sigstore-signed release catalog before it installs anything.
+- **Supply chain.** Every npm package version since 0.1.0 carries npm provenance (SLSA v1) from a GitHub-hosted build of this repository; check it with `npm audit signatures`. Each [Release](https://github.com/l1felabs/useweave/releases) attaches the exact archives, their provenance bundles and `SHA256SUMS`; `joinweave update` verifies a Sigstore-signed release catalog before it installs anything.
 - **Security.** Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md): acknowledgement within 2 business days, triage within 5.
 - **Support.** [SUPPORT.md](SUPPORT.md) lists channels and response targets.
 
 ## Versioning and compatibility
 
-- Packages follow [semantic versioning](https://semver.org). Until 1.0, a minor release (0.x → 0.y) may change behavior and ships with upgrade notes; patch releases never do.
+- Packages follow [semantic versioning](https://semver.org). Until 1.0, any 0.x release may change behavior; every change and its upgrade notes are in [CHANGELOG.md](CHANGELOG.md).
 - `joinweave` pins exact versions of the CLI, MCP server and native packages it installs. `npx joinweave update --check --json` reports a newer verified release; `npx joinweave update --yes` applies it and keeps your identity, data and MCP client settings.
 - Runtimes: Node.js 20.17+ or 22.9+ with npm and optional dependencies enabled. macOS 11+ on arm64/x64. Linux arm64/x64 with glibc 2.39+ (Ubuntu 24.04 or later); Linux arm64 also needs OpenSSL 3. Managed Linux services use `systemd --user`; `--no-service` runs the node detached.
 - `weave capabilities --json` reports the runtime API version (currently 2) and every supported command.

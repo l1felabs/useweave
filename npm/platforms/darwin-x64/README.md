@@ -32,7 +32,7 @@ The package version always equals the `@useweave/cli` version that depends on it
 
 ## Verify
 
-Every version is published with npm provenance, and the matching
+Every version since 0.1.0 is published with npm provenance, and the matching
 [GitHub Release](https://github.com/l1felabs/useweave/releases) attaches the same
 archive with `SHA256SUMS`:
 

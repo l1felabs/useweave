@@ -39,9 +39,9 @@ with no additional terms or conditions.
 
 ## Releases
 
-Maintainers release from `v*` tags. Every package version is qualified against its
-exact archive, published to npm with provenance, and attached to a GitHub Release
-with `SHA256SUMS`. A bad version is deprecated with a message naming the fix
+Each release is tagged `vX.Y.Z` at its exact source commit. Every package version is
+qualified against its exact archive and published to npm with provenance, and the
+release's GitHub Release attaches those archives, their provenance bundles and `SHA256SUMS`. A bad version is deprecated with a message naming the fix
 version; tags are never moved or deleted.
 
 ## Conduct

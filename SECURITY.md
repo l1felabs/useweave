@@ -38,12 +38,12 @@ We will not pursue legal action against good-faith research that:
 
 ## Verifying releases
 
-Every package is published to npm with [provenance](https://docs.npmjs.com/generating-provenance-statements).
+Every package version since 0.1.0 is published to npm with [provenance](https://docs.npmjs.com/generating-provenance-statements).
 Each [GitHub Release](https://github.com/l1felabs/useweave/releases) attaches the
 exact npm archives, their provenance bundles and `SHA256SUMS`.
 
 ```sh
 npm audit signatures                     # in a project that installed Weave
-gh release download v0.2.1 -R l1felabs/useweave -p 'SHA256SUMS' -p '*.tgz'
-sha256sum -c SHA256SUMS
+gh release download v0.2.1 -R l1felabs/useweave
+shasum -a 256 -c SHA256SUMS
 ```

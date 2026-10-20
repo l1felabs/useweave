@@ -2,8 +2,7 @@
 
 All notable changes to the Weave npm packages are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the packages
-follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The step-by-step
-engineering record for each release is in [release/HISTORY.md](release/HISTORY.md).
+follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
@@ -13,7 +12,7 @@ engineering record for each release is in [release/HISTORY.md](release/HISTORY.m
 - Package READMEs and metadata for the four native platform packages (`npm/platforms/`).
 
 ### Changed
-- `@useweave/cli`, `@useweave/mcp` and `joinweave` declare `homepage`, `bugs` and `keywords`, and `@useweave/cli` ships a complete package README. These take effect with the next published version.
+- `@useweave/cli` and `joinweave` declare `homepage`, `bugs` and `keywords`, and `@useweave/cli` ships a complete package README. These take effect with the next published version.
 - The repository README follows the standard front-page order (install, quickstart, packages, docs, enterprise, versioning).
 
 ## [0.2.1] - 2026-10-13
@@ -45,10 +44,14 @@ All seven packages at 0.2.0. Runtime API 2.
 
 ## [0.1.3] - 2026-10-12
 
+`joinweave` only. The CLI, MCP server and native packages stay at 0.1.0.
+
 ### Fixed
 - Fresh managed installs in 0.1.2 failed service verification because the native ownership receipt exceeded its 64 KiB limit. The full MCP file census now lives in a separate SHA256-bound file, and 0.1.2 receipts migrate automatically.
 
 ## [0.1.2] - 2026-10-12 [DEPRECATED]
+
+`joinweave` only. The CLI, MCP server and native packages stay at 0.1.0.
 
 Deprecated on npm: use 0.1.3. Keep `~/.weave`; rerun `npx joinweave@latest`.
 
@@ -57,6 +60,8 @@ Deprecated on npm: use 0.1.3. Keep `~/.weave`; rerun `npx joinweave@latest`.
 - The MCP server installs into an owned, persistent directory (`~/.weave/tools/mcp-0.1.0`), and agent clients are configured only with consent.
 
 ## [0.1.1] - 2026-10-12
+
+`joinweave` only. The CLI, MCP server and native packages stay at 0.1.0.
 
 ### Fixed
 - macOS: wait up to ten seconds for asynchronous launchd deregistration before replacing or removing managed files.

@@ -20,8 +20,9 @@ npm install --global @useweave/cli
 weave --help
 ```
 
-Keep npm optional dependencies enabled: the launcher depends on exactly one of
-the native packages below, chosen by `os` and `cpu`.
+Keep npm optional dependencies enabled: the launcher declares the four native
+packages below as optional dependencies, and npm installs the one that matches
+your `os` and `cpu`.
 
 | Platform | Native package | Requirement |
 | --- | --- | --- |
