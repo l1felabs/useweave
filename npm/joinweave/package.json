@@ -3,6 +3,20 @@
   "version": "0.2.1",
   "type": "module",
   "description": "One command to join the Weave agent-native web.",
+  "homepage": "https://docs.weave.earth/getting-started/installation",
+  "bugs": {
+    "url": "https://github.com/l1felabs/useweave/issues"
+  },
+  "keywords": [
+    "weave",
+    "installer",
+    "agents",
+    "mcp",
+    "model-context-protocol",
+    "peer-to-peer",
+    "local-first",
+    "cli"
+  ],
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": "^20.17.0 || >=22.9.0"

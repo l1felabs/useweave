@@ -1,0 +1,6 @@
+# Code owner review is required on main (ruleset).
+*                       @l1feorg
+/.github/               @l1feorg
+/release/               @l1feorg
+/scripts/               @l1feorg
+SECURITY.md             @l1feorg
