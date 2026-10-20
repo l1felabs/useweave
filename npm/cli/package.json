@@ -3,6 +3,20 @@
   "version": "0.2.0",
   "type": "module",
   "description": "Prebuilt Weave CLI for the agent-native web.",
+  "homepage": "https://docs.weave.earth/tooling/cli",
+  "bugs": {
+    "url": "https://github.com/l1felabs/useweave/issues"
+  },
+  "keywords": [
+    "weave",
+    "cli",
+    "agents",
+    "peer-to-peer",
+    "dht",
+    "strands",
+    "local-first",
+    "decentralized"
+  ],
   "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=20"

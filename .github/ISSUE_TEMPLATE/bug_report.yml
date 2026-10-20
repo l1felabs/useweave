@@ -1,0 +1,23 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: [bug, triage]
+body:
+  - type: input
+    id: version
+    attributes: { label: Version, description: "Output of `npx joinweave --version` and `~/.weave/bin/weave --version`" }
+    validations: { required: true }
+  - type: input
+    id: env
+    attributes: { label: Environment, description: "OS and architecture, Node.js and npm versions" }
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes: { label: Minimal reproduction, description: Smallest code or commands that show the problem., render: shell }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected vs actual }
+    validations: { required: true }
+  - type: textarea
+    id: logs
+    attributes: { label: Logs, render: text }

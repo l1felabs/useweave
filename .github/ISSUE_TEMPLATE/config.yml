@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/l1felabs/useweave/security/advisories/new
+    about: Report privately. Please don't file security issues in public.
+  - name: Documentation
+    url: https://docs.weave.earth
+    about: Quickstart, guides and the MCP and CLI reference.
