@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "qualified": true,
+  "published": false,
+  "package": {
+    "name": "@useweave/cli-linux-arm64",
+    "version": "0.2.1",
+    "tarball": "useweave-cli-linux-arm64-0.2.1.tgz",
+    "sha256": "4cc50aa54cc4289bc868ba0fa8f8f94a03017f48cd146f5c1fc443eb177c2eee",
+    "integrity": "sha512-SDy+uT5qHsWuRTXgp6nLRfufwQYucOs6nO109dR/A7xHcz9JIUWiw7tExhCD+2De6xB6o38VXa1cCBBMkZkcmQ==",
+    "bytes": 11890664
+  },
+  "source": {
+    "repository": "l1felabs/weave-release-source",
+    "commit": "029287b8ccfc1317c56078eac02b0548667bff3d",
+    "tree": "c6cd6ecd1e948205c39f58d7c1fcf9f03e91f609",
+    "cargoLockSha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
+    "features": "Cargo defaults; --locked --release -p l1fe-weave-cli"
+  },
+  "binary": {
+    "target": "aarch64-unknown-linux-gnu",
+    "version": "0.1.0",
+    "runtimeApiVersion": 2,
+    "sha256": "6e926f850fbc15742b609b62a0550e050307705357ab3c1ae18ff456a43fe03b",
+    "bytes": 33883032
+  },
+  "tests": {
+    "cli": {
+      "passed": 44,
+      "failed": 0,
+      "ignored": 0,
+      "ignoredCases": []
+    },
+    "sdk": {
+      "passed": 80,
+      "failed": 0,
+      "ignored": 3,
+      "ignoredCases": [
+        "network_manager::tests::public_relay_discovery_replicates_verified_sparse_bytes_without_tcp",
+        "replication::tests::replicate_large_strand",
+        "replication::tests::test_basic_replication_over_duplex"
+      ]
+    },
+    "model": {
+      "passed": 13,
+      "failed": 0,
+      "ignored": 0,
+      "ignoredCases": []
+    },
+    "dht": {
+      "passed": 29,
+      "failed": 0,
+      "ignored": 0,
+      "ignoredCases": []
+    }
+  },
+  "abi": {
+    "linkage": "\tlinux-vdso.so.1 (0x0000ffffb8597000)\n\tlibssl.so.3 => /lib/aarch64-linux-gnu/libssl.so.3 (0x0000ffffb6e10000)\n\tlibcrypto.so.3 => /lib/aarch64-linux-gnu/libcrypto.so.3 (0x0000ffffb69b0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffffb6970000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffffb68c0000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffb6710000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffffb8550000)\n",
+    "maxRequiredGlibc": "2.34",
+    "opensslShared": true,
+    "declaredMinimumGlibc": "2.39"
+  },
+  "licenseSource": {
+    "repository": "l1felabs/useweave",
+    "commit": "df232ec90c335660a1a8bfb5729de57248de547b",
+    "blobs": {
+      "LICENSE-MIT": {
+        "sha256": "9a3a6034b75145583501ba18e08304a83fda5b4679a0dcc558b2aa6e560ec1a0",
+        "gitBlob": "e9e3e94aedf6b48d95fef5e0ce08f9aefebcf51b"
+      },
+      "LICENSE-APACHE": {
+        "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+        "gitBlob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64"
+      }
+    },
+    "concatenatedSha256": "7b134701a093815ae3dc22ee5433246a9b6daa6e4c9fd35a840d63cb18cb999a"
+  },
+  "evidence": {
+    "cli-tests.log": {
+      "sha256": "4f2a4a33659ecffb758487282ed2c952e34aff9561237877db91b1008953b915",
+      "bytes": 25259
+    },
+    "cli-tests.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "sdk-tests.log": {
+      "sha256": "e3e16b70726ca7d4d137c6d489847a9589e6ed7547cf09a05c7a44976bc9870a",
+      "bytes": 12993
+    },
+    "sdk-tests.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "model-tests.log": {
+      "sha256": "f9e8944b941a9147112d72a1c90cd080a6b8d6b801f2eb77086fe506cdb7c3ab",
+      "bytes": 5416
+    },
+    "model-tests.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "dht-tests.log": {
+      "sha256": "9638703f173f0aff1076790c5b1ff6f8ddcb80cae1e4653933e6b0ba7f1f4232",
+      "bytes": 6287
+    },
+    "dht-tests.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "build.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "build.log": {
+      "sha256": "0d4707db8bdfbf26acd0b5c9b06b37ea3d1a15b88ac6b89d52b056d497d11b1b",
+      "bytes": 19906
+    },
+    "rustc.txt": {
+      "sha256": "60586c5678459d91006a242307c9d42841a6a719f612863d27ff30ffb3f4bf4f",
+      "bytes": 197
+    },
+    "Cargo.lock": {
+      "sha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
+      "bytes": 199461
+    },
+    "binary-version.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "capabilities.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "linkage.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "binary-version.log": {
+      "sha256": "3a6a68df5d5ace8425a0a0ffaf341622488b6ca9f15a8bc48bc5ca40c168db3e",
+      "bytes": 12
+    },
+    "capabilities.log": {
+      "sha256": "0fc04f1794dee5f4a0156594bff3950630c7a4b0de99205133cd408c8d28fdd0",
+      "bytes": 1284
+    },
+    "linkage.log": {
+      "sha256": "801cfbb935237c07b904ffa0263fb1aa69099ca52e1865d91368c421d2b41146",
+      "bytes": 449
+    },
+    "symbol-versions.exit": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "bytes": 2
+    },
+    "symbol-versions.log": {
+      "sha256": "56cd8e4c728334e89cb32aacf2a93593b3b3182e51ec31d7ba594720748978de",
+      "bytes": 4884
+    }
+  },
+  "independentQualification": null,
+  "limits": [
+    "No installed-package upgrade or OS service-manager acceptance is claimed by native compilation/packing.",
+    "No Developer ID signing, notarization, publication or registry provenance claim."
+  ]
+}

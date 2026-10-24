@@ -37,21 +37,25 @@
       "name": "@useweave/cli-linux-arm64",
       "version": "0.2.1",
       "archive": "release/0.2.1-cli/npm/useweave-cli-linux-arm64-0.2.1.tgz",
-      "sha256": null,
-      "integrity": null,
-      "bytes": null,
-      "qualification": null,
-      "pending": "Qualified native archive not yet bound (scripts/provenance-021-cli/bind-native.mjs)"
+      "sha256": "4cc50aa54cc4289bc868ba0fa8f8f94a03017f48cd146f5c1fc443eb177c2eee",
+      "integrity": "sha512-SDy+uT5qHsWuRTXgp6nLRfufwQYucOs6nO109dR/A7xHcz9JIUWiw7tExhCD+2De6xB6o38VXa1cCBBMkZkcmQ==",
+      "bytes": 11890664,
+      "qualification": {
+        "path": "release/0.2.1-cli/qualification/cli-linux-arm64.json",
+        "sha256": "26ab90fa2d419473d5f5d7e60eb49e697f403bd8b4d76b24cb406ae1c90ae28a"
+      }
     },
     {
       "name": "@useweave/cli-linux-x64",
       "version": "0.2.1",
       "archive": "release/0.2.1-cli/npm/useweave-cli-linux-x64-0.2.1.tgz",
-      "sha256": null,
-      "integrity": null,
-      "bytes": null,
-      "qualification": null,
-      "pending": "Qualified native archive not yet bound (scripts/provenance-021-cli/bind-native.mjs)"
+      "sha256": "fee64a62b0ebd470a5d5f7c5d20c08221061ccd56e005732315bf369c9f0e9f9",
+      "integrity": "sha512-yL2IdNZ2GtzjlYcaBxl1z31H97/b/eVpjK3DWNGIE9UlGuHeU1YUaK5CCpXS/StxnJOsd9AgmeSyLKPIVqAmAg==",
+      "bytes": 11982747,
+      "qualification": {
+        "path": "release/0.2.1-cli/qualification/cli-linux-x64.json",
+        "sha256": "977e556777aa1b15a7954d4f5190c34af90b75bc0177fb1c36934d9141382b8f"
+      }
     },
     {
       "name": "@useweave/cli",
