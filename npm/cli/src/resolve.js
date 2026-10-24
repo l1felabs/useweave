@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-export const VERSION = '0.2.0';
+export const VERSION = '0.2.1';
 const require = createRequire(import.meta.url);
 const supported = new Set(['darwin-arm64', 'darwin-x64', 'linux-arm64', 'linux-x64']);
 

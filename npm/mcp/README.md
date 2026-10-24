@@ -1,10 +1,10 @@
 # Weave MCP
 
-`@useweave/mcp@0.2.0` exposes **46 typed tools**: 17 core operations,
+`@useweave/mcp@0.2.1` exposes **46 typed tools**: 17 core operations,
 capability discovery and 28 persistent data-model operations. It connects agents
 to the native Weave runtime over MCP stdio.
 
-`server.json` describes stdio registry metadata for `@useweave/mcp@0.2.0` under
+`server.json` describes stdio registry metadata for `@useweave/mcp@0.2.1` under
 `io.github.l1felabs/weave`. Registry submission is a separate release operation;
 this metadata alone does not establish a listing. See the
 [registry release instructions](./REGISTRY.md).
@@ -13,10 +13,10 @@ this metadata alone does not establish a listing. See the
 [Report an issue](https://github.com/l1felabs/useweave/issues)
 
 `@useweave/mcp` gives agents native Weave DHT and strand tools over MCP stdio.
-For this release, install the matching API-2 workspace with `npx joinweave@0.2.0`, then run:
+For this release, install the matching API-2 workspace with `npx joinweave@0.2.2`, then run:
 
 ```sh
-npx --yes @useweave/mcp@0.2.0
+npx --yes @useweave/mcp@0.2.1
 ```
 
 Node.js 20 or later is required. The MCP TypeScript SDK's
@@ -24,10 +24,10 @@ server package (`@modelcontextprotocol/server` 2.3.1) handles initialization,
 protocol negotiation, tools and cancellation. No compilation happens on the
 user's machine. stdout carries only MCP messages; diagnostics use stderr.
 
-`joinweave@0.2.0` installs this persistent 46-tool MCP runtime and, after consent, configures
-clients to run Node with that installed server's absolute entry path. Prefer
-the exact configuration emitted by the installer. The `npx` command above is a
-manual fallback for the same exact 0.2.0 server. This package never edits
+`joinweave@0.2.2` installs a persistent 46-tool MCP runtime (managed release 0.2.0, the same 46 tools) and, after consent, configures
+clients to run Node with that installed server's absolute entry path and `WEAVE_BINARY` set to the
+managed 0.2.1 native runtime. Prefer the exact configuration emitted by the installer. The `npx`
+command above is a manual fallback for the exact 0.2.1 server. This package never edits
 another application's configuration.
 
 Optional environment:
@@ -37,7 +37,8 @@ Optional environment:
 - `WEAVE_HOME`: absolute workspace directory, inherited by the native CLI.
 
 Without an override, the server tries `~/.weave/bin/weave` (or `weave.exe`), then
-the matching API-2 prebuilt binary from `@useweave/cli@0.2.0`. An existing
+the matching API-2 prebuilt binary from `@useweave/cli@0.2.1`, which speaks the Weave
+Kademlia protocol `/weave/kad/1.0.0` by default. An existing
 API-1 workspace binary is not silently replaced; upgrade it with joinweave before
 using model tools. Use `weave capabilities --json` to inspect compatibility:
 the native version string remains `weave 0.1.0` in both runtime generations.

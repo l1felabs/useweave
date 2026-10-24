@@ -1,6 +1,6 @@
 {
   "name": "@useweave/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Prebuilt Weave CLI for the agent-native web.",
   "license": "MIT OR Apache-2.0",
@@ -22,10 +22,10 @@
     "LICENSE-MIT"
   ],
   "optionalDependencies": {
-    "@useweave/cli-darwin-arm64": "0.2.0",
-    "@useweave/cli-darwin-x64": "0.2.0",
-    "@useweave/cli-linux-arm64": "0.2.0",
-    "@useweave/cli-linux-x64": "0.2.0"
+    "@useweave/cli-darwin-arm64": "0.2.1",
+    "@useweave/cli-darwin-x64": "0.2.1",
+    "@useweave/cli-linux-arm64": "0.2.1",
+    "@useweave/cli-linux-x64": "0.2.1"
   },
   "repository": {
     "type": "git",

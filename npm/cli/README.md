@@ -1,9 +1,10 @@
 # @useweave/cli
 
-Run `npx @useweave/cli@0.2.0 --help`, or install the complete workspace with
-`npx joinweave@0.2.0`. The command is `weave`.
+Run `npx @useweave/cli@0.2.1 --help`, or install the complete workspace with
+`npx joinweave@0.2.2`. The command is `weave`.
 
-Package version 0.2.0 provides runtime API 2 for persistent data-model tools.
+Package version 0.2.1 provides runtime API 2 for persistent data-model tools.
+Its native runtime speaks the Weave Kademlia protocol `/weave/kad/1.0.0` by default.
 The native executable reports `weave 0.1.0`; inspect `weave capabilities --json`
 for its runtime API and supported commands. The npm package version, native
 version string and runtime API are separate contracts.
