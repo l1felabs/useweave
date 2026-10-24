@@ -6,23 +6,23 @@
     "name": "@useweave/cli-linux-arm64",
     "version": "0.2.1",
     "tarball": "useweave-cli-linux-arm64-0.2.1.tgz",
-    "sha256": "4cc50aa54cc4289bc868ba0fa8f8f94a03017f48cd146f5c1fc443eb177c2eee",
-    "integrity": "sha512-SDy+uT5qHsWuRTXgp6nLRfufwQYucOs6nO109dR/A7xHcz9JIUWiw7tExhCD+2De6xB6o38VXa1cCBBMkZkcmQ==",
-    "bytes": 11890664
+    "sha256": "f87348057313423dab1390679c16ba3680885065348c1c645032797e5fcb4e15",
+    "integrity": "sha512-jA45yS1JQiPEtsdFkIV/P7GLml7hG9N4e4dcjyVPkaXR9/rJg5MbWmTC11v8wvnmz4En+83nvYOe+Rt//7yraA==",
+    "bytes": 11993782
   },
   "source": {
     "repository": "l1felabs/weave-release-source",
-    "commit": "029287b8ccfc1317c56078eac02b0548667bff3d",
-    "tree": "c6cd6ecd1e948205c39f58d7c1fcf9f03e91f609",
-    "cargoLockSha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
+    "commit": "267a2fdee1c58f15fe9ff69891f5b84a6e5c9d33",
+    "tree": "745e62a7ec5268fbe66f7805a90db4f545565675",
+    "cargoLockSha256": "2ff9df0b7be7dd645da3c799936bc7b1d11d6d91d32ca9749d8f8ce8ecd67e38",
     "features": "Cargo defaults; --locked --release -p l1fe-weave-cli"
   },
   "binary": {
     "target": "aarch64-unknown-linux-gnu",
     "version": "0.1.0",
     "runtimeApiVersion": 2,
-    "sha256": "6e926f850fbc15742b609b62a0550e050307705357ab3c1ae18ff456a43fe03b",
-    "bytes": 33883032
+    "sha256": "0ed54635aecb8db7706a81d94de82636e70e0fa153cbcc51b2bb29665fcc0efb",
+    "bytes": 34069616
   },
   "tests": {
     "cli": {
@@ -55,7 +55,7 @@
     }
   },
   "abi": {
-    "linkage": "\tlinux-vdso.so.1 (0x0000ffffb8597000)\n\tlibssl.so.3 => /lib/aarch64-linux-gnu/libssl.so.3 (0x0000ffffb6e10000)\n\tlibcrypto.so.3 => /lib/aarch64-linux-gnu/libcrypto.so.3 (0x0000ffffb69b0000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffffb6970000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffffb68c0000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffffb6710000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffffb8550000)\n",
+    "linkage": "\tlinux-vdso.so.1 (0x0000ffff9f80b000)\n\tlibssl.so.3 => /lib/aarch64-linux-gnu/libssl.so.3 (0x0000ffff9e060000)\n\tlibcrypto.so.3 => /lib/aarch64-linux-gnu/libcrypto.so.3 (0x0000ffff9dc00000)\n\tlibgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000ffff9dbc0000)\n\tlibm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000ffff9db10000)\n\tlibc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000ffff9d960000)\n\t/lib/ld-linux-aarch64.so.1 (0x0000ffff9f7c0000)\n",
     "maxRequiredGlibc": "2.34",
     "opensslShared": true,
     "declaredMinimumGlibc": "2.39"
@@ -77,23 +77,23 @@
   },
   "evidence": {
     "cli-tests.log": {
-      "sha256": "4f2a4a33659ecffb758487282ed2c952e34aff9561237877db91b1008953b915",
-      "bytes": 25259
+      "sha256": "1f0d690e38de78f8c699ae24b9768511066e31b432c03cbb332a0fb1ef8c9582",
+      "bytes": 25267
     },
     "cli-tests.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
       "bytes": 2
     },
     "sdk-tests.log": {
-      "sha256": "e3e16b70726ca7d4d137c6d489847a9589e6ed7547cf09a05c7a44976bc9870a",
-      "bytes": 12993
+      "sha256": "af0becdc900c72268ee20b9a0dc6c8886cc4c82128a05a09feb61e3e9da6be7e",
+      "bytes": 13002
     },
     "sdk-tests.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
       "bytes": 2
     },
     "model-tests.log": {
-      "sha256": "f9e8944b941a9147112d72a1c90cd080a6b8d6b801f2eb77086fe506cdb7c3ab",
+      "sha256": "6c8a18278869d5bb7e9af1dd7ff2836d78f238af6cc19b0606754bbf6f29f9b9",
       "bytes": 5416
     },
     "model-tests.exit": {
@@ -101,8 +101,8 @@
       "bytes": 2
     },
     "dht-tests.log": {
-      "sha256": "9638703f173f0aff1076790c5b1ff6f8ddcb80cae1e4653933e6b0ba7f1f4232",
-      "bytes": 6287
+      "sha256": "b80237298bd94b8efbcd5bee0aabbd34e125a512fbfae93a86816a6e02626865",
+      "bytes": 6296
     },
     "dht-tests.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
@@ -113,16 +113,16 @@
       "bytes": 2
     },
     "build.log": {
-      "sha256": "0d4707db8bdfbf26acd0b5c9b06b37ea3d1a15b88ac6b89d52b056d497d11b1b",
-      "bytes": 19906
+      "sha256": "75520e4f8450c31f276f7d47cf710a2c2b537a8544346c9d95d49a7c047608a0",
+      "bytes": 19915
     },
     "rustc.txt": {
       "sha256": "60586c5678459d91006a242307c9d42841a6a719f612863d27ff30ffb3f4bf4f",
       "bytes": 197
     },
     "Cargo.lock": {
-      "sha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
-      "bytes": 199461
+      "sha256": "2ff9df0b7be7dd645da3c799936bc7b1d11d6d91d32ca9749d8f8ce8ecd67e38",
+      "bytes": 199504
     },
     "binary-version.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
@@ -145,7 +145,7 @@
       "bytes": 1284
     },
     "linkage.log": {
-      "sha256": "801cfbb935237c07b904ffa0263fb1aa69099ca52e1865d91368c421d2b41146",
+      "sha256": "e487474c2ddac98c838cc27f01600e1bdbc2eedad5298ec697c6b961fa3e58f5",
       "bytes": 449
     },
     "symbol-versions.exit": {

@@ -9,8 +9,8 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const VERSION = '0.2.1';
-const NATIVE = '029287b8ccfc1317c56078eac02b0548667bff3d';
-const CARGO_LOCK = '76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626';
+const NATIVE = '267a2fdee1c58f15fe9ff69891f5b84a6e5c9d33';
+const CARGO_LOCK = '2ff9df0b7be7dd645da3c799936bc7b1d11d6d91d32ca9749d8f8ce8ecd67e38';
 const TARGETS = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin', 'linux-arm64': 'aarch64-unknown-linux-gnu', 'linux-x64': 'x86_64-unknown-linux-gnu' };
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const [target, archivePath, receiptPath] = process.argv.slice(2);

@@ -3,8 +3,8 @@
   "release": "0.2.1-cli",
   "ready": false,
   "package_source_commit": null,
-  "native_source_commit": "029287b8ccfc1317c56078eac02b0548667bff3d",
-  "native_cargo_lock_sha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
+  "native_source_commit": "267a2fdee1c58f15fe9ff69891f5b84a6e5c9d33",
+  "native_cargo_lock_sha256": "2ff9df0b7be7dd645da3c799936bc7b1d11d6d91d32ca9749d8f8ce8ecd67e38",
   "notes": [
     "Natives, @useweave/cli and @useweave/mcp are 0.2.1; joinweave is 0.2.2.",
     "The native runtime speaks /weave/kad/1.0.0 by default and still reports weave 0.1.0 / runtime API 2.",
@@ -37,24 +37,24 @@
       "name": "@useweave/cli-linux-arm64",
       "version": "0.2.1",
       "archive": "release/0.2.1-cli/npm/useweave-cli-linux-arm64-0.2.1.tgz",
-      "sha256": "4cc50aa54cc4289bc868ba0fa8f8f94a03017f48cd146f5c1fc443eb177c2eee",
-      "integrity": "sha512-SDy+uT5qHsWuRTXgp6nLRfufwQYucOs6nO109dR/A7xHcz9JIUWiw7tExhCD+2De6xB6o38VXa1cCBBMkZkcmQ==",
-      "bytes": 11890664,
+      "sha256": "f87348057313423dab1390679c16ba3680885065348c1c645032797e5fcb4e15",
+      "integrity": "sha512-jA45yS1JQiPEtsdFkIV/P7GLml7hG9N4e4dcjyVPkaXR9/rJg5MbWmTC11v8wvnmz4En+83nvYOe+Rt//7yraA==",
+      "bytes": 11993782,
       "qualification": {
         "path": "release/0.2.1-cli/qualification/cli-linux-arm64.json",
-        "sha256": "26ab90fa2d419473d5f5d7e60eb49e697f403bd8b4d76b24cb406ae1c90ae28a"
+        "sha256": "31009c0f61297e7e7f51b719e51220192a1a6f7e04cb4d795aebe9b20b92ea57"
       }
     },
     {
       "name": "@useweave/cli-linux-x64",
       "version": "0.2.1",
       "archive": "release/0.2.1-cli/npm/useweave-cli-linux-x64-0.2.1.tgz",
-      "sha256": "fee64a62b0ebd470a5d5f7c5d20c08221061ccd56e005732315bf369c9f0e9f9",
-      "integrity": "sha512-yL2IdNZ2GtzjlYcaBxl1z31H97/b/eVpjK3DWNGIE9UlGuHeU1YUaK5CCpXS/StxnJOsd9AgmeSyLKPIVqAmAg==",
-      "bytes": 11982747,
+      "sha256": "0761f664ec6301d87e25bf40b819cb268b5f6301689d13ba5c08a70c28064d41",
+      "integrity": "sha512-8bDlMDA82s6JwqYIksKX1iXZv6+Qw6w9mC3S1NV/PH7bT0uRixDDnYMmQsQUsBHfeKyThLZqXjiUNnPoek2LwA==",
+      "bytes": 12093535,
       "qualification": {
         "path": "release/0.2.1-cli/qualification/cli-linux-x64.json",
-        "sha256": "977e556777aa1b15a7954d4f5190c34af90b75bc0177fb1c36934d9141382b8f"
+        "sha256": "8f64be30aea322d8cb4b792778e63b2e094e4b9458a477d52eeeac05ab0392c4"
       }
     },
     {
