@@ -94,7 +94,7 @@ test('NO_COLOR disables color, narrow resize never wraps generated lines, and la
 
 test('summary reflects actual installed/skipped components and consent rather than promising desktop or registration', () => {
   const text = installationSummary({ binary: '/a b/weave', workspace: '/a b/.weave', shared: '/a b/Weave', pathAdded: false, mcpClients: [], components: [
-    { id: 'runtime', name: 'Native CLI', version: '0.2.0', status: 'installed' },
+    { id: 'runtime', name: 'Native CLI', version: '0.2.1', status: 'installed' },
     { id: 'node', name: 'Peer node', status: 'running', managed: false },
     { id: 'mcp', name: 'Agent MCP server', version: '0.2.0', status: 'skipped' },
   ] });
@@ -107,6 +107,6 @@ test('summary reflects actual installed/skipped components and consent rather th
 
 test('upgrade summary names only retained clients requiring explicit migration consent', () => {
   const text = installationSummary({ binary: '/a/weave', workspace: '/a/.weave', shared: '/a/Weave', pathAdded: true, mcpClients: ['cursor', 'codex'], mcpClientsNeedingUpdate: ['cursor'], components: [] });
-  assert.ok(text.includes('npx joinweave@0.2.1 --yes --mcp-client cursor'));
+  assert.ok(text.includes('npx joinweave@0.2.2 --yes --mcp-client cursor'));
   assert.equal(text.includes('--mcp-client cursor,codex'), false);
 });

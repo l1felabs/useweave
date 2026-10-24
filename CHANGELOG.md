@@ -1,3 +1,12 @@
+## 2026-10-24 — Prepare @useweave/cli 0.2.1 (Weave Kademlia protocol)
+
+- `@useweave/cli` 0.2.1 and its four native packages come from private source 029287b (Cargo.lock SHA-256 76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626). The native runtime speaks `/weave/kad/1.0.0` by default. All three Weave DHT seeds already speak both `/weave/kad/1.0.0` and `/ipfs/kad/1.0.0`, so 0.2.0 and 0.2.1 peers keep working during the move. The executable still reports `weave 0.1.0` and runtime API 2.
+- `@useweave/mcp` 0.2.1 pins `@useweave/cli` 0.2.1 for standalone `npx` users. Tools and server behaviour are unchanged.
+- `joinweave` 0.2.2 pins `@useweave/cli` 0.2.1 and replaces the managed native on upgrade. Its managed MCP runtime stays at the published 0.2.0 archive: managed clients already reach the native through `WEAVE_BINARY`, and the receipt model only migrates a 0.1.0 runtime. A signed update catalog for 0.2.2 must list `@useweave/mcp` 0.2.1, because the staged-package check requires every Weave dependency to match the catalog CLI version.
+- Lock: workspace versions and native entries move to 0.2.1. Native SRIs are bound with `scripts/provenance-021-cli/bind-native.mjs` as each qualified archive lands; macOS archives wait for the Depot macOS runner.
+- Packet: `release/0.2.1-cli/` holds the three JavaScript archives packed on Depot 729xqd0shz and a manifest that stays `ready: false` until all four natives are bound. `npm-cli-provenance-021.yml` and `scripts/provenance-021-cli/` verify and sign that packet; nothing here publishes.
+- Depot tests: head 41lgfm4g20 and base 8dlkflz2sg both run 98 tests, 96 pass, 0 fail, 2 declared skips.
+
 ## 2026-10-13 — Prepare one tokenless catalog and installer signing job
 
 - Extend the local signing candidate to use the established official npm11.21.0 generateProvenance/verifyProvenance implementation for only joinweave0.2.1's exact SHA512 subject, alongside the catalog signature. Bind and export the npm bundle in the signing receipt; preserve the six old packages and contents:read/id-token:write permissions.

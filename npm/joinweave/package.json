@@ -1,6 +1,6 @@
 {
   "name": "joinweave",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "One command to join the Weave agent-native web.",
   "license": "MIT OR Apache-2.0",
@@ -18,7 +18,7 @@
     "LICENSE-MIT"
   ],
   "dependencies": {
-    "@useweave/cli": "0.2.0",
+    "@useweave/cli": "0.2.1",
     "sigstore": "4.1.1"
   },
   "repository": {
