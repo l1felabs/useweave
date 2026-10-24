@@ -6,23 +6,23 @@
     "name": "@useweave/cli-linux-x64",
     "version": "0.2.1",
     "tarball": "useweave-cli-linux-x64-0.2.1.tgz",
-    "sha256": "fee64a62b0ebd470a5d5f7c5d20c08221061ccd56e005732315bf369c9f0e9f9",
-    "integrity": "sha512-yL2IdNZ2GtzjlYcaBxl1z31H97/b/eVpjK3DWNGIE9UlGuHeU1YUaK5CCpXS/StxnJOsd9AgmeSyLKPIVqAmAg==",
-    "bytes": 11982747
+    "sha256": "0761f664ec6301d87e25bf40b819cb268b5f6301689d13ba5c08a70c28064d41",
+    "integrity": "sha512-8bDlMDA82s6JwqYIksKX1iXZv6+Qw6w9mC3S1NV/PH7bT0uRixDDnYMmQsQUsBHfeKyThLZqXjiUNnPoek2LwA==",
+    "bytes": 12093535
   },
   "source": {
     "repository": "l1felabs/weave-release-source",
-    "commit": "029287b8ccfc1317c56078eac02b0548667bff3d",
-    "tree": "c6cd6ecd1e948205c39f58d7c1fcf9f03e91f609",
-    "cargoLockSha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
+    "commit": "267a2fdee1c58f15fe9ff69891f5b84a6e5c9d33",
+    "tree": "745e62a7ec5268fbe66f7805a90db4f545565675",
+    "cargoLockSha256": "2ff9df0b7be7dd645da3c799936bc7b1d11d6d91d32ca9749d8f8ce8ecd67e38",
     "features": "Cargo defaults; --locked --release -p l1fe-weave-cli"
   },
   "binary": {
     "target": "x86_64-unknown-linux-gnu",
     "version": "0.1.0",
     "runtimeApiVersion": 2,
-    "sha256": "9315e17015c151447dcc8d91a6cc5800b8fb6993d6597c36bf3a50fa4f2a1c7f",
-    "bytes": 36276376
+    "sha256": "0f65e0562d16efa920aa73b823d04fa9dc27dc3ff5299365b1be3e944d721877",
+    "bytes": 36501032
   },
   "tests": {
     "cli": {
@@ -55,7 +55,7 @@
     }
   },
   "abi": {
-    "linkage": "\tlinux-vdso.so.1 (0x00007f32ba95b000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f32b8fd4000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f32b8ef4000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f32b8d12000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f32ba95d000)\n",
+    "linkage": "\tlinux-vdso.so.1 (0x00007f5d90a3b000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f5d8f088000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f5d8efa8000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f5d8edc6000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f5d90a3d000)\n",
     "maxRequiredGlibc": "2.34",
     "opensslShared": false,
     "declaredMinimumGlibc": "2.39"
@@ -77,23 +77,23 @@
   },
   "evidence": {
     "cli-tests.log": {
-      "sha256": "e047c7e3b9fbe3b861b04bfb789fa221ac0eb0203ee84e5d273f4beaf5338440",
-      "bytes": 25228
+      "sha256": "8ae9f90181eec39016bc880c2ad5acf14476b3a3156c25e5b4d186b881d500f5",
+      "bytes": 25237
     },
     "cli-tests.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
       "bytes": 2
     },
     "sdk-tests.log": {
-      "sha256": "2b0ad9ed34369d1949e22d7ea982fea4ee0e1ff4f91263e98d95a2202ebe1b86",
-      "bytes": 12993
+      "sha256": "27f3790da354affd81cc8619a657ba3be4e64835011293209c6705ab4808c972",
+      "bytes": 13002
     },
     "sdk-tests.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
       "bytes": 2
     },
     "model-tests.log": {
-      "sha256": "93ed5f75b919edc9ade0c6f2ae8a6a414d9b6479624b48fa4e16ba8a2b4e50c8",
+      "sha256": "96c2d852376e342ef91076aa9ab2273c522969cb94b322009507fd1026c43d8e",
       "bytes": 5348
     },
     "model-tests.exit": {
@@ -101,8 +101,8 @@
       "bytes": 2
     },
     "dht-tests.log": {
-      "sha256": "5481d7fc91475206fc52d06103313119c1751cd0a4d25dd9ded1468b3bb3f0fe",
-      "bytes": 6286
+      "sha256": "f896fe52bfc4510f70f1be6c83240a38e0a6e5a25df0469e0a72694d89ea5de0",
+      "bytes": 6295
     },
     "dht-tests.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
@@ -113,16 +113,16 @@
       "bytes": 2
     },
     "build.log": {
-      "sha256": "17a93991518a0402c22c5eb6c821e061b3f82380e564975c21e18f154bd5c518",
-      "bytes": 20014
+      "sha256": "192c3ad70b0beca94cc472f92fe2a6f30485ab189c87cb1e2f78fd122416affe",
+      "bytes": 20023
     },
     "rustc.txt": {
       "sha256": "b569b0c98ea3133c7252b4b8ea6b39b7b353813df0dd5f5c412c355691424112",
       "bytes": 196
     },
     "Cargo.lock": {
-      "sha256": "76f3dff1f391c1170d3cbaf30acd017dbc9f4e3b52580914df3e2eb35cd6c626",
-      "bytes": 199461
+      "sha256": "2ff9df0b7be7dd645da3c799936bc7b1d11d6d91d32ca9749d8f8ce8ecd67e38",
+      "bytes": 199504
     },
     "binary-version.exit": {
       "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
@@ -145,7 +145,7 @@
       "bytes": 1284
     },
     "linkage.log": {
-      "sha256": "70ad74864a1b4253fc876332f11dc67a3b5dc8fcf712d38ba7522a8fcbec8735",
+      "sha256": "bbf0cb56b2eebe0affba0e4aa87e2026e9f09bd6e572b01efefb47ae3b129f0f",
       "bytes": 297
     },
     "symbol-versions.exit": {
