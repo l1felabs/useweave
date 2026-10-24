@@ -1,6 +1,6 @@
 {
   "name": "@useweave/mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "mcpName": "io.github.l1felabs/weave",
   "description": "Weave strand and DHT tools for agents over MCP stdio",
   "homepage": "https://docs.weave.earth/tooling/mcp",
@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
-    "@useweave/cli": "0.2.0",
+    "@useweave/cli": "0.2.1",
     "zod": "4.6.5"
   },
   "publishConfig": {

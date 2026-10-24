@@ -5,8 +5,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { ManagedMcp, MCP_VERSION } from './managed-mcp.js';
 
-export const VERSION = '0.2.1';
-const NATIVE_PACKAGE_VERSION = '0.2.0';
+export const VERSION = '0.2.2';
+const NATIVE_PACKAGE_VERSION = '0.2.1';
 const NATIVE_VERSION = '0.1.0';
 // Service ownership protocol is independent of npm/runtime capability versions.
 const RECEIPT_VERSION = '0.1.0';

@@ -1,3 +1,9 @@
+## 0.2.2 — Native CLI 0.2.1 (2026-10-24)
+
+- Pin `@useweave/cli` 0.2.1. Its native runtime speaks the Weave Kademlia protocol `/weave/kad/1.0.0` by default. An existing 0.2.0 native is replaced through the journaled binary upgrade; identity, data, service and client settings are kept.
+- Keep the managed MCP runtime at the published 0.2.0 archive and integrity. It reaches the new native through `WEAVE_BINARY`.
+- Terminal follow-up commands and the guide name `joinweave@0.2.2`.
+
 ## 2026-10-13 — Prepare one tokenless catalog and installer signing job
 
 - Extend the local signing candidate to use the established official npm11.21.0 generateProvenance/verifyProvenance implementation for only joinweave0.2.1's exact SHA512 subject, alongside the catalog signature. Bind and export the npm bundle in the signing receipt; preserve the six old packages and contents:read/id-token:write permissions.

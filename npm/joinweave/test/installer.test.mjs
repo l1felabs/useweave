@@ -131,7 +131,7 @@ test('failed installer-only upgrade stays available until successful retry passe
   // Model a completed predecessor with unchanged native/MCP component versions.
   receipt.installerVersion = '0.1.3'; fs.writeFileSync(owner.manifestPath, JSON.stringify(receipt));
   const catalog = { version: VERSION, packages: [
-    { name: `@useweave/cli-linux-${process.arch}`, version: '0.2.0' },
+    { name: `@useweave/cli-linux-${process.arch}`, version: '0.2.1' },
     { name: '@useweave/mcp', version: '0.2.0' },
   ] };
   const seen = [], discover = async current => {
@@ -232,7 +232,7 @@ test('launchd teardown waits for deregistration before removing managed files', 
   assert.equal(receipt.version, '0.1.0');
   assert.equal(receipt.installerVersion, VERSION);
   assert.equal(receipt.binary.version, '0.1.0');
-  assert.equal(receipt.binary.packageVersion, '0.2.0');
+  assert.equal(receipt.binary.packageVersion, '0.2.1');
   definition = receipt.service.path;
   const retained = join(installed.workspace, 'retained-strand');
   fs.writeFileSync(retained, 'keep');
@@ -605,7 +605,7 @@ test('0.1.2 oversized MCP receipt migrates before native ownership validation an
   assert.ok(fs.statSync(old.owner.manifestPath).size < 64 * 1024);
   assert.equal(compact.version, '0.1.0');
   assert.equal(compact.binary.version, '0.1.0');
-  assert.equal(compact.binary.packageVersion, '0.2.0');
+  assert.equal(compact.binary.packageVersion, '0.2.1');
   assert.equal(fs.statSync(old.owner.mcpRuntime.censusPath).mode & 0o777, 0o600);
   assert.equal((await f.installer().uninstall(parseArgs(['uninstall', '--yes']))).ok, true);
   assert.equal(fs.existsSync(old.runtime), false);
@@ -714,7 +714,7 @@ test('0.1.3 upgrade retains identity, data, old MCP and unconsented JSON/TOML cl
   const receipt = JSON.parse(fs.readFileSync(old.manifestPath));
   assert.equal(receipt.version, '0.1.0');
   assert.equal(receipt.binary.version, '0.1.0');
-  assert.equal(receipt.binary.packageVersion, '0.2.0');
+  assert.equal(receipt.binary.packageVersion, '0.2.1');
   assert.equal(receipt.mcpRuntime.version, MCP_VERSION);
   assert.equal(receipt.previousMcpRuntime.version, LEGACY_MCP_VERSION);
   assert.equal(receipt.previousMcpRuntime.files, undefined);
@@ -856,7 +856,7 @@ test('upgrade shutdown failure preserves old executable, service definition and 
 async function interruptedBinaryUpgrade(f, phase) {
   const owner = f.installer(), save = owner.saveManifest.bind(owner);
   owner.saveManifest = () => {
-    if (phase === 'after-rename' && !owner.manifest.binaryUpgrade && owner.manifest.binary?.packageVersion === '0.2.0') {
+    if (phase === 'after-rename' && !owner.manifest.binaryUpgrade && owner.manifest.binary?.packageVersion === '0.2.1') {
       throw new Error('fixture crash after binary replacement, before receipt save');
     }
     save();
@@ -867,7 +867,7 @@ async function interruptedBinaryUpgrade(f, phase) {
   assert.match(journal.binaryUpgrade.fromSha256, /^[a-f0-9]{64}$/);
   assert.match(journal.binaryUpgrade.toSha256, /^[a-f0-9]{64}$/);
   assert.notEqual(journal.binaryUpgrade.fromSha256, journal.binaryUpgrade.toSha256);
-  assert.equal(journal.binaryUpgrade.packageVersion, '0.2.0');
+  assert.equal(journal.binaryUpgrade.packageVersion, '0.2.1');
   assert.equal(journal.binary.sha256, journal.binaryUpgrade.fromSha256);
   assert.equal(journal.service, null);
   return journal;
@@ -889,7 +889,7 @@ test('binary upgrade intent recovers both sides of rename through reinstall or u
         const receipt = JSON.parse(fs.readFileSync(old.manifestPath));
         assert.equal(receipt.binaryUpgrade, undefined);
         assert.equal(receipt.binary.version, '0.1.0');
-        assert.equal(receipt.binary.packageVersion, '0.2.0');
+        assert.equal(receipt.binary.packageVersion, '0.2.1');
         assert.equal(receipt.version, '0.1.0');
       } else assert.equal(fs.existsSync(old.binary), false);
     }

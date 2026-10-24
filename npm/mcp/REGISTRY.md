@@ -1,10 +1,10 @@
 # Official MCP Registry submission
 
 Registry preparation status: **prepared, not submitted**. `server.json` describes
-`@useweave/mcp@0.2.0` under `io.github.l1felabs/weave`; this file is not evidence
+`@useweave/mcp@0.2.1` under `io.github.l1felabs/weave`; this file is not evidence
 of a registry listing. Its version matches the package and MCP server identity.
 The package exposes 46 tools, including 28 model operations requiring runtime
-API 2 from `@useweave/cli@0.2.0`. Check the native capability catalog rather than
+API 2 from `@useweave/cli@0.2.1`. Check the native capability catalog rather than
 its version string: the API-2 executable still reports `weave 0.1.0`.
 Publication and verification of the exact archive are prerequisites to registry
 submission.
@@ -15,7 +15,7 @@ eligible. See the official [npm package verification rules](https://github.com/m
 
 ## Release prerequisites
 
-1. Verify release `0.2.0` after exact-source review: `package.json`, the `mcp`
+1. Verify release `0.2.1` after exact-source review: `package.json`, the `mcp`
    entry in `../package-lock.json`, both version fields in `server.json`, and
    MCP `serverInfo.version` in `src/server.js` must agree.
    Keep `mcpName` equal to `io.github.l1felabs/weave`. Do not reuse the occupied
@@ -37,7 +37,7 @@ eligible. See the official [npm package verification rules](https://github.com/m
    namespace ownership has been proven by this preparation.
 
 The CLI dependency and its four native optional packages must all resolve to
-0.2.0 API-2 artifacts. The lockfile and installer MCP integrity must be bound to
+0.2.1 API-2 artifacts. The lockfile and installer MCP integrity must be bound to
 the actual qualified archives before the next installation acceptance.
 
 ## Submit the qualified release
