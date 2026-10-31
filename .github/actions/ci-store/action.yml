@@ -1,6 +1,6 @@
 name: CI files store
 description: >-
-  Vendored copy of l1felabs/ci-files/store@ab35d26e (this repo cannot use private l1felabs actions).
+  Vendored copy of l1felabs/ci-files/store@f1419418 (this repo cannot use private l1felabs actions).
   Keep a run's output in gs://l1fe-minds-fc-ci-files/<owner>/<repo>/<run id>/<attempt>/<name>/ (14-day lifecycle).
   Replaces actions/upload-artifact: GitHub storage is banned (JR, 31 Oct). Signs in through the GitHub WIF
   provider with the job's OIDC token (no key), so the job needs `permissions: id-token: write`, and the repo
@@ -65,6 +65,7 @@ runs:
           [ -n "$pattern" ] || continue
           case "$pattern" in "!"*) continue ;; esac
           for f in $pattern; do
+            [ -e "$f" ] || continue  # a plain path that doesn't exist (nullglob only drops unmatched globs)
             found=1
             if [ -d "$f" ]; then gcloud storage cp --recursive "${f%/}/*" "$dest/"; else gcloud storage cp "$f" "$dest/"; fi
           done
