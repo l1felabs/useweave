@@ -42,3 +42,4 @@ jobs:
           name: joinweave-installer-patch-release-${{ github.run_id }}
           path: patch-release/
           if-no-files-found: error
+          retention-days: 30

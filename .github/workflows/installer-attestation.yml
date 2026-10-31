@@ -35,3 +35,4 @@ jobs:
           name: joinweave-0.1.3-signed-${{ github.sha }}
           path: signed-release/
           if-no-files-found: error
+          retention-days: 30

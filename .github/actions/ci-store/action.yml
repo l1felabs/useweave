@@ -1,6 +1,6 @@
 name: CI files store
 description: >-
-  Vendored copy of l1felabs/ci-files/store@4bddb728 (public repos cannot use private l1felabs actions).
+  Vendored copy of l1felabs/ci-files/store@ab35d26e (this repo cannot use private l1felabs actions).
   Keep a run's output in gs://l1fe-minds-fc-ci-files/<owner>/<repo>/<run id>/<attempt>/<name>/ (14-day lifecycle).
   Replaces actions/upload-artifact: GitHub storage is banned (JR, 31 Oct). Signs in through the GitHub WIF
   provider with the job's OIDC token (no key), so the job needs `permissions: id-token: write`, and the repo
@@ -15,6 +15,11 @@ inputs:
   if-no-files-found:
     description: error, warn or ignore.
     default: warn
+  retention-days:
+    description: >-
+      How long the output must live: up to 14 (the default) keeps it under <owner>/<repo>/ (14-day lifecycle); 15-30
+      under retain-30d/; 31-90 under retain-90d/ (release evidence). More than 90 is refused.
+    default: "14"
   bucket:
     default: l1fe-minds-fc-ci-files
   workload-identity-provider:
@@ -44,11 +49,15 @@ runs:
         PATHS: ${{ inputs.path }}
         MISSING: ${{ inputs.if-no-files-found }}
         BUCKET: ${{ inputs.bucket }}
+        RETENTION: ${{ inputs.retention-days }}
         CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.auth.outputs.credentials_file_path }}
       run: |
         set -euo pipefail
         shopt -s nullglob; shopt -s globstar 2>/dev/null || true  # bash 3.2 on macOS has no globstar
-        dest="gs://$BUCKET/$GITHUB_REPOSITORY/$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT/$NAME"
+        case "$RETENTION" in ''|*[!0-9]*) echo "::error::retention-days must be a whole number of days, got '$RETENTION'"; exit 1 ;; esac
+        if [ "$RETENTION" -le 14 ]; then tier=""; elif [ "$RETENTION" -le 30 ]; then tier="retain-30d/"; elif [ "$RETENTION" -le 90 ]; then tier="retain-90d/"; else
+          echo "::error::retention-days $RETENTION is over 90 (the longest tier)"; exit 1; fi
+        dest="gs://$BUCKET/$tier$GITHUB_REPOSITORY/$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT/$NAME"
         echo "uri=$dest" >> "$GITHUB_OUTPUT"
         found=0
         while IFS= read -r pattern; do
