@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   attest:
-    runs-on: ubuntu-24.04
+    runs-on: depot-ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -30,7 +30,7 @@ jobs:
         env:
           APPROVED_COMMIT: ${{ inputs.approved_commit }}
         run: node scripts/attest-installer-release.mjs release/installer-0.1.3 signed-release
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: ./.github/actions/ci-store
         with:
           name: joinweave-0.1.3-signed-${{ github.sha }}
           path: signed-release/

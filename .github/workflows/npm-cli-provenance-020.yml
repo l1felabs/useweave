@@ -23,7 +23,7 @@ concurrency:
 jobs:
   attest:
     if: github.repository == 'l1felabs/useweave' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: depot-ubuntu-24.04
     timeout-minutes: 15
     env:
       APPROVED_OPS_COMMIT: ${{ inputs.approved_ops_commit }}
@@ -56,9 +56,8 @@ jobs:
         run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
       - name: Verify approved bytes and generate signed bundles without publishing
         run: node operations/scripts/provenance-020/generate-npm-provenance.mjs release provenance
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: ./operations/.github/actions/ci-store
         with:
           name: weave-npm-provenance-0.2.0-${{ github.run_id }}-${{ github.run_attempt }}
           path: provenance/
           if-no-files-found: error
-          retention-days: 7

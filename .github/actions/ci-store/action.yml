@@ -1,0 +1,80 @@
+name: CI files store
+description: >-
+  Vendored copy of l1felabs/ci-files/store@f1419418 (this repo cannot use private l1felabs actions).
+  Keep a run's output in gs://l1fe-minds-fc-ci-files/<owner>/<repo>/<run id>/<attempt>/<name>/ (14-day lifecycle).
+  Replaces actions/upload-artifact: GitHub storage is banned (JR, 31 Oct). Signs in through the GitHub WIF
+  provider with the job's OIDC token (no key), so the job needs `permissions: id-token: write`, and the repo
+  needs its workloadIdentityUser binding on ci-files@ (INFRA §4.5). Linux, macOS and Windows (bash) runners.
+inputs:
+  name:
+    description: The output's name (what fetch asks for).
+    default: artifact
+  path:
+    description: Files, globs or directories, one per line. A directory is kept by its contents, as upload-artifact does.
+    required: true
+  if-no-files-found:
+    description: error, warn or ignore.
+    default: warn
+  retention-days:
+    description: >-
+      How long the output must live: up to 14 (the default) keeps it under <owner>/<repo>/ (14-day lifecycle); 15-30
+      under retain-30d/; 31-90 under retain-90d/ (release evidence). More than 90 is refused.
+    default: "14"
+  bucket:
+    default: l1fe-minds-fc-ci-files
+  workload-identity-provider:
+    default: projects/808958844152/locations/global/workloadIdentityPools/minds-fc-pool/providers/github
+  service-account:
+    default: ci-files@l1fe-minds-fc.iam.gserviceaccount.com
+outputs:
+  uri:
+    description: The gs:// prefix the files went to.
+    value: ${{ steps.copy.outputs.uri }}
+runs:
+  using: composite
+  steps:
+    - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+      with:
+        workload_identity_provider: ${{ inputs.workload-identity-provider }}
+        service_account: ${{ inputs.service-account }}
+        create_credentials_file: true
+        export_environment_variables: false
+        cleanup_credentials: true
+      id: auth
+    - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+    - id: copy
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        PATHS: ${{ inputs.path }}
+        MISSING: ${{ inputs.if-no-files-found }}
+        BUCKET: ${{ inputs.bucket }}
+        RETENTION: ${{ inputs.retention-days }}
+        CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: ${{ steps.auth.outputs.credentials_file_path }}
+      run: |
+        set -euo pipefail
+        shopt -s nullglob; shopt -s globstar 2>/dev/null || true  # bash 3.2 on macOS has no globstar
+        case "$RETENTION" in ''|*[!0-9]*) echo "::error::retention-days must be a whole number of days, got '$RETENTION'"; exit 1 ;; esac
+        if [ "$RETENTION" -le 14 ]; then tier=""; elif [ "$RETENTION" -le 30 ]; then tier="retain-30d/"; elif [ "$RETENTION" -le 90 ]; then tier="retain-90d/"; else
+          echo "::error::retention-days $RETENTION is over 90 (the longest tier)"; exit 1; fi
+        dest="gs://$BUCKET/$tier$GITHUB_REPOSITORY/$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT/$NAME"
+        echo "uri=$dest" >> "$GITHUB_OUTPUT"
+        found=0
+        while IFS= read -r pattern; do
+          pattern="${pattern#"${pattern%%[![:space:]]*}"}"; pattern="${pattern%"${pattern##*[![:space:]]}"}"
+          [ -n "$pattern" ] || continue
+          case "$pattern" in "!"*) continue ;; esac
+          for f in $pattern; do
+            [ -e "$f" ] || continue  # a plain path that doesn't exist (nullglob only drops unmatched globs)
+            found=1
+            if [ -d "$f" ]; then gcloud storage cp --recursive "${f%/}/*" "$dest/"; else gcloud storage cp "$f" "$dest/"; fi
+          done
+        done <<< "$PATHS"
+        if [ "$found" = 0 ]; then
+          case "$MISSING" in
+            error) echo "::error::$NAME: no files matched"; exit 1 ;;
+            warn) echo "::warning::$NAME: no files matched" ;;
+          esac
+          exit 0
+        fi
+        echo "- $NAME: \`$dest/\`" >> "$GITHUB_STEP_SUMMARY"
