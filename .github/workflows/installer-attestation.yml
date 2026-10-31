@@ -30,7 +30,7 @@ jobs:
         env:
           APPROVED_COMMIT: ${{ inputs.approved_commit }}
         run: node scripts/attest-installer-release.mjs release/installer-0.1.3 signed-release
-      - uses: l1felabs/ci-files/store@4bddb728d8d9e1201e89e851cd710f9d4336b0d2 # main 2026-10-31
+      - uses: ./.github/actions/ci-store
         with:
           name: joinweave-0.1.3-signed-${{ github.sha }}
           path: signed-release/
