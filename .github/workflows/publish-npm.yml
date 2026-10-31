@@ -29,7 +29,7 @@ concurrency:
 jobs:
   publish:
     if: github.repository == 'l1felabs/useweave' && github.ref == 'refs/tags/v0.1.0'
-    runs-on: ubuntu-24.04
+    runs-on: depot-ubuntu-24.04
     timeout-minutes: 20
     environment: npm-release
     steps:

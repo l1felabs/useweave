@@ -1,0 +1,58 @@
+# JR, 31 Oct 2026: "We should be using Depot fully. GitHub Actions should be banned in favor of Depot, period."
+# Fails when any workflow or action in this repo uses a GitHub-hosted runner or GitHub artifact/SARIF storage.
+# Runners: depot-ubuntu-24.04[-N|-arm], depot-ubuntu-22.04, depot-macos-latest, depot-windows-2022 (or our own self-hosted).
+# Outputs: l1felabs/ci-files/store and /fetch (gs://l1fe-minds-fc-ci-files). Scans fail the job on findings.
+name: no-github-compute
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  merge_group:
+permissions:
+  contents: read
+jobs:
+  no-github-compute:
+    runs-on: depot-ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - name: No GitHub-hosted runners, no GitHub artifact or SARIF storage
+        shell: python3 {0}
+        run: |
+          import pathlib, re, sys
+          hosted = re.compile(r'(?<![\w:/@.-])(ubuntu-(latest|\d\d\.\d\d(-arm)?)|macos-(latest|\d\d)(-large|-xlarge)?|windows-(latest|20\d\d)(-arm)?)(?![\w.-])')
+          banned = {
+              'actions/upload-artifact': 'use l1felabs/ci-files/store',
+              'actions/download-artifact': 'use l1felabs/ci-files/fetch',
+              'github/codeql-action/upload-sarif': 'keep the SARIF with l1felabs/ci-files/store and fail on findings',
+              'actions/upload-pages-artifact': 'GitHub Pages artifacts are GitHub storage',
+          }
+          files = [p for p in pathlib.Path('.github').rglob('*') if p.suffix in ('.yml', '.yaml') and p.is_file()]
+          files += [p for p in pathlib.Path('.').rglob('action.y*ml') if '.github' not in p.parts and 'node_modules' not in p.parts]
+          bad = []
+          for p in sorted(set(files)):
+              lines = p.read_text(errors='replace').splitlines()
+              for i, raw in enumerate(lines, 1):
+                  line = raw.split(' #')[0]
+                  if line.lstrip().startswith('#'):
+                      continue
+                  m = hosted.search(line)
+                  if m:
+                      bad.append(f'{p}:{i}: GitHub-hosted runner "{m.group(0)}": use a depot-* runner (depot-ubuntu-24.04, depot-macos-latest, depot-windows-2022)')
+                  for k, why in banned.items():
+                      if re.search(r'uses:\s*["\']?' + re.escape(k) + r'\b', line):
+                          bad.append(f'{p}:{i}: {k}: {why}')
+                  if re.search(r'uses:\s*["\']?github/codeql-action/analyze\b', line):
+                      window = '\n'.join(lines[i:i + 8])
+                      if not re.search(r'upload:\s*["\']?(never|false)', window):
+                          bad.append(f'{p}:{i}: codeql analyze uploads to GitHub: set upload: never, keep the SARIF in ci-files, fail on findings')
+                  if re.search(r'uses:\s*["\']?gitleaks/gitleaks-action\b', line):
+                      window = '\n'.join(lines[i:i + 12])
+                      if not re.search(r'GITLEAKS_ENABLE_UPLOAD_ARTIFACT:\s*["\']?false', window):
+                          bad.append(f'{p}:{i}: gitleaks-action uploads an artifact: set GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false')
+          for b in bad:
+              print(f'::error::{b}')
+          print(f'{len(files)} files checked, {len(bad)} problems')
+          sys.exit(1 if bad else 0)

@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   attest:
-    runs-on: ubuntu-24.04
+    runs-on: depot-ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -37,9 +37,8 @@ jobs:
         env:
           APPROVED_OPS_COMMIT: ${{ inputs.approved_ops_commit }}
         run: node scripts/attest-installer-patch.mjs release/installer-0.1.1 patch-release
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: l1felabs/ci-files/store@4bddb728d8d9e1201e89e851cd710f9d4336b0d2 # main 2026-10-31
         with:
           name: joinweave-installer-patch-release-${{ github.run_id }}
           path: patch-release/
           if-no-files-found: error
-          retention-days: 30
