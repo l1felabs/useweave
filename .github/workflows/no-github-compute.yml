@@ -15,9 +15,17 @@ jobs:
     runs-on: depot-ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          persist-credentials: false
+      # A plain shallow fetch, not actions/checkout: some repos have broken submodule entries that make checkout's
+      # cleanup fail, and this check only reads files. The token stays in this step.
+      - name: Fetch this commit
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$auth" fetch -q --depth 1 --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" "$GITHUB_SHA"
+          git -c advice.detachedHead=false checkout -q FETCH_HEAD
       - name: No GitHub-hosted runners, no GitHub artifact or SARIF storage
         shell: python3 {0}
         run: |
