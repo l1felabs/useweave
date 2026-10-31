@@ -68,7 +68,7 @@ jobs:
         run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
       - name: Verify approved bytes and attest catalog plus the one new installer
         run: node operations/scripts/github-update/sign-catalog.mjs release catalog-output
-      - uses: ./.github/actions/ci-store
+      - uses: ./operations/.github/actions/ci-store
         with:
           name: weave-update-catalog-${{ github.run_id }}-${{ github.run_attempt }}
           path: catalog-output/

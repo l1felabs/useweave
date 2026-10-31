@@ -56,7 +56,7 @@ jobs:
         run: npm install --global npm@11.21.0 --ignore-scripts --no-audit --no-fund --loglevel=error
       - name: Verify approved bytes and generate signed bundles without publishing
         run: node operations/scripts/provenance-021-cli/generate-npm-provenance.mjs release provenance
-      - uses: ./.github/actions/ci-store
+      - uses: ./operations/.github/actions/ci-store
         with:
           name: weave-npm-provenance-0.2.1-cli-${{ github.run_id }}-${{ github.run_attempt }}
           path: provenance/

@@ -42,7 +42,7 @@ jobs:
         env:
           APPROVED_OPS_COMMIT: ${{ inputs.approved_ops_commit }}
         run: node operations/scripts/generate-npm-provenance.mjs release provenance
-      - uses: ./.github/actions/ci-store
+      - uses: ./operations/.github/actions/ci-store
         with:
           name: weave-npm-provenance-${{ github.run_id }}
           path: provenance/
